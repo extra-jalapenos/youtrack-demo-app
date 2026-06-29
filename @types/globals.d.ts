@@ -15,6 +15,7 @@ type AppAPI = {
   onRefresh?: () => void;
   onConfigure?: () => void;
   onAppLocationChange?: (location: AppLocation) => void;
+  onModalModeChange?: (event: {isModal: boolean}) => void;
 }
 
 
@@ -29,8 +30,8 @@ export interface HubService {
 
 interface BaseAPILayer {
   alert: (...args: Parameters<(typeof AlertService)['addAlert']>) => void;
-  enterModalMode: Promise<() => void>;
-  exitModalMode: Promise<() => void>;
+  enterModalMode: () => void;
+  exitModalMode: () => void;
   /** @deprecated use "closeWidget()" method instead */
   collapse: () => void;
   closeWidget: () => void;
