@@ -33,8 +33,7 @@
       "extensionPoint": "MAIN_MENU_ITEM",
       "description": "Main menu item",
       "iconPath": "full-page/widget-icon.svg",
-      "showHeader": false,
-      "permissions": []     
+      "showHeader": false
     },
 
     {
