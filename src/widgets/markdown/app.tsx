@@ -2,6 +2,7 @@ import React, { memo, useEffect } from 'react';
 import type { EmbeddableWidgetAPI } from '../../../@types/globals';
 import { Configuration } from './configuration';
 import { WidgetConfiguration } from './types';
+import Heading from "@jetbrains/ring-ui-built/components/heading/heading";
 
 
 const AppComponent: React.FC = () => {
@@ -46,6 +47,7 @@ const AppComponent: React.FC = () => {
 
   return (
     <div className="widget">
+      <Heading>Cool heading</Heading>
       {isConfiguring && host
         ? (
           <Configuration onDone={doneConfiguring}/>

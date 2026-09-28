@@ -1,7 +1,7 @@
 {
-  "name" : "yt-demo-app",
-  "title" : "YouTrack Demo App",
-  "description" :  "App utilizes available extension points for demo reasons",
+  "name": "yt-demo-app",
+  "title": "YouTrack Demo App",
+  "description": "App utilizes available extension points for demo reasons",
   "$schema": "https://json.schemastore.org/youtrack-app.json",
   "version": "1.0.2",
   "icon": "demo-app-logo.svg",
@@ -26,6 +26,7 @@
     }
   ],
   "widgets": [
+
     {
       "key": "full-page",
       "name": "Full Page",
@@ -35,7 +36,6 @@
       "iconPath": "full-page/widget-icon.svg",
       "showHeader": false
     },
-
     {
       "key": "fields-first",
       "name": "Cat of the day",
@@ -43,7 +43,6 @@
       "indexPath": "cats/index.html",
       "extensionPoint": "ISSUE_FIELD_PANEL_FIRST"
     },
-
     {
       "key": "fields-last1",
       "name": "Cat of the day bottom",
@@ -61,7 +60,6 @@
       "iconPath": "jetbrains-simple.svg",
       "settingsSchemaPath": "markdown/md-widget-settings.json"
     },
-
     {
       "key": "issue-option",
       "name": "Demo App Toolbar",
@@ -87,7 +85,6 @@
         "height": 100
       }
     },
-
     {
       "key": "article-menu",
       "name": "Article toolbar",
@@ -98,43 +95,36 @@
         "width": 400
       }
     },
-
-
     {
       "key": "article-below-summary",
       "name": "Article below summary",
       "indexPath": "lorem/index.html",
       "extensionPoint": "ARTICLE_BELOW_SUMMARY"
     },
-
     {
       "key": "article-above-activity",
       "name": "Article above activity",
       "indexPath": "lorem/index.html",
       "extensionPoint": "ARTICLE_ABOVE_ACTIVITY_STREAM"
     },
-
     {
       "key": "project-settings",
       "name": "Configure me",
       "indexPath": "full-page/index.html",
       "extensionPoint": "PROJECT_SETTINGS"
     },
-
     {
       "key": "project-tab",
       "name": "Demo Project Overview Tab",
       "indexPath": "full-page/index.html",
       "extensionPoint": "PROJECT_TAB"
     },
-
     {
       "key": "admin-menu",
       "name": "Dedicated Admin Page",
       "indexPath": "full-page/index.html",
       "extensionPoint": "ADMINISTRATION_MENU_ITEM"
     },
-
     {
       "key": "hd-channel",
       "name": "Some fancy channel",
@@ -143,7 +133,6 @@
       "indexPath": "full-page/index.html",
       "extensionPoint": "HELPDESK_CHANNEL"
     },
-
     {
       "key": "profile-tab",
       "name": "Configure me",
@@ -159,7 +148,6 @@
         "height": 10
       }
     },
-
     {
       "key": "dashboard-w",
       "name": "Dashboard widget",
@@ -167,7 +155,17 @@
       "indexPath": "markdown/index.html",
       "extensionPoint": "DASHBOARD_WIDGET",
       "settingsSchemaPath": "markdown/md-widget-settings.json",
-      "permissions": ["UPDATE_USER"]
+      "permissions": [
+        "UPDATE_USER"
+      ]
+    },
+    {
+      "key": "allys-widget",
+      "name": "Allys-Widget",
+      "indexPath": "allys-widget/index.html",
+      "extensionPoint": "DASHBOARD_WIDGET",
+      "iconPath": "allys-widget/widget-icon.svg",
+      "description": "A test widget."
     }
   ]
 }
