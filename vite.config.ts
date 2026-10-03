@@ -49,15 +49,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         // List every widget entry point here
-        allysWidget: resolve(__dirname, 'src/widgets/allys-widget/index.html'),
-
-        fullPage: resolve(__dirname, 'src/widgets/full-page/index.html'),
-        markdown: resolve(__dirname, 'src/widgets/markdown/index.html'),
-        userCard: resolve(__dirname, 'src/widgets/user-card/index.html'),
-        quotes: resolve(__dirname, 'src/widgets/quotes/index.html'),
-        lorem: resolve(__dirname, 'src/widgets/lorem/index.html'),
-        modal: resolve(__dirname, 'src/widgets/modal/index.html'),
-        cats: resolve(__dirname, 'src/widgets/cats/index.html')
+        allysWidget: resolve(__dirname, 'src/widgets/allys-widget/index.html')
       }
     }
   }

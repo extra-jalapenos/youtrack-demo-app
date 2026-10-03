@@ -1,5 +1,6 @@
 
 // See https://www.jetbrains.com/help/youtrack/devportal-apps/apps-reference-http-handlers.html
+
 exports.httpHandler = {
   endpoints: [
     {
