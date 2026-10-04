@@ -1,0 +1,25 @@
+.widget {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ring-unit) * 2);
+  margin: calc(var(--ring-unit) / 2);
+}
+
+text {
+  fill: currentColor;
+  font-family: var(--ring-font-family);
+  font-size: var(--ring-font-size);
+}
+
+g.axes > text {
+  font-size: var(--ring-font-size-smaller);
+}
+
+line {
+  stroke: currentColor;
+}
+
+path {
+  stroke: none;
+}
+
