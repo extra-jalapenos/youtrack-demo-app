@@ -1,3 +1,11 @@
+type Timeslot = "day" | "month" | "year";
+export interface WidgetConfiguration {
+    title: string;
+    timeslot: Timeslot;
+    series: string;
+}
+
+
 const firstNames = [
     "alex",
     "jordan",

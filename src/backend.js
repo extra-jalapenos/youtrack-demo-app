@@ -1,3 +1,4 @@
+const {search} = require("@jetbrains/youtrack-scripting-api/search.js");
 exports.httpHandler = {
   endpoints: [
     {

@@ -30,6 +30,37 @@ exports.httpHandler = {
       }
     },
     {
+      method: 'GET',
+      path: 'worklogs',
+      handle: function handle(ctx) {
+        const queryString = ctx.request.getParameter('query');
+
+        const to = new Date(new Date().setHours(0, 0, 0, 0)); // the end of last Sunday
+        const from = new Date(new Date().setFullYear(to.getFullYear() - 1));
+        const foundIssues = search(null, `work date: ${dates.format(from, "yyyy-MM-dd")} .. ${dates.format(to, "yyyy-MM-dd")}`);
+        // Get a list of assignees from the Assignee field in the project,
+        // get a list of work items for each of them, and calculate sum of durations
+        // for the work items reported by each assignee:
+        const workitems = [];
+        foundIssues.forEach(issue => {
+          console.log(issue.id);
+          if (issue.workItems.size === 0)
+            return;
+          issue.workItems.forEach(workitem => {
+            workitems.push(workitem);
+          });
+        });
+
+        ctx.response.json({
+          test: true,
+          scope: 'global',
+          name,
+          worklogs: workitems,
+          queryString: queryString
+        });
+      }
+    },
+    {
       method: 'POST',
       path: 'demo',
       handle: function handle(ctx) {
