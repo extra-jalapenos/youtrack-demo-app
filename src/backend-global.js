@@ -1,5 +1,7 @@
 
 // See https://www.jetbrains.com/help/youtrack/devportal-apps/apps-reference-http-handlers.html
+const {search} = require("@jetbrains/youtrack-scripting-api/search.js");
+const dates = require("@jetbrains/youtrack-scripting-api/date-time.js");
 
 exports.httpHandler = {
   endpoints: [
@@ -43,7 +45,6 @@ exports.httpHandler = {
         // for the work items reported by each assignee:
         const workitems = [];
         foundIssues.forEach(issue => {
-          console.log(issue.id);
           if (issue.workItems.size === 0)
             return;
           issue.workItems.forEach(workitem => {
@@ -52,9 +53,6 @@ exports.httpHandler = {
         });
 
         ctx.response.json({
-          test: true,
-          scope: 'global',
-          name,
           worklogs: workitems,
           queryString: queryString
         });
