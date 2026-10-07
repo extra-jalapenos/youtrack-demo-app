@@ -10,7 +10,7 @@ exports.httpHandler = {
       method: 'GET',
       path: 'demo',
       handle: function handle(ctx) {
-        ctx.response.json({test: true, scope: 'user', userName: ctx.user.name});
+        ctx.response.json({test: true, scope: 'user', user: ctx.user});
       }
     },
     {

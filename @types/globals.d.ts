@@ -90,6 +90,11 @@ type YTAppInterface = {
     id: string;
     type: 'user' | 'article' | 'ticket' | 'project' | 'app'
   };
+  me: {
+    key: string;
+    name: string;
+    login: string;
+  }
   register: (appApi?: AppAPI) => Promise<HostAPI | EmbeddableWidgetAPI>;
 }
 

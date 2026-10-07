@@ -1,11 +1,6 @@
 import React, {useRef, useEffect, useState} from "react";
 import * as d3 from "d3";
-import type {InternMap} from "d3";
-import { dataPointRaw } from "./types.ts";
 import type {AlertType} from "@jetbrains/ring-ui-built/components/alert/alert";
-import Heading from "@jetbrains/ring-ui-built/components/heading/heading";
-import Button from "@jetbrains/ring-ui-built/components/button/button";
-import Text from "@jetbrains/ring-ui-built/components/text/text";
 import type {EmbeddableWidgetAPI} from "../../../@types/globals";
 
 type dataPoint = { category: string, author: string, start: number, end: number, value: number }
@@ -31,16 +26,18 @@ const RadialChart = ({host, from, to, width, height}: RadialChartData) => {
             try {
                 const configYoutrackWorkitems = {
                     query: {
-                        fields: "id,author(name,login),duration(minutes),date,text,issue(id,customFields(id,name,value))"
+                        fields: "id,author(name,login),duration(minutes),date,text,issue(id,customFields(id,name,value(id,name)))"
                     }
                 }
                 const responseYoutrack: any = await host.fetchYouTrack(`workItems`, configYoutrackWorkitems)
+                console.log("responseYoutrack", responseYoutrack[0])
                 setFetchedData(responseYoutrack)
             } catch {
                 host.alert('YTApp: could not request custom HTTP endpoint', 'error' as AlertType.ERROR)
             }
         }
         getWorklogs(from, to)
+
     }, [from, to]);
 
     const allDays = d3.timeDay.range(from, to, 1)
@@ -49,54 +46,60 @@ const RadialChart = ({host, from, to, width, height}: RadialChartData) => {
         formatMonthName = d3.timeFormat("%B")
 
     const preppedData = fetchedData.map((d: any) => {
+        const customFields = d.issue.customFields;
+        const location = customFields.find((item: any) => item.name === "location")
         return {
-            category: formatISOWeek(d.date),
+            category: formatISOWeek(new Date(d.date)),
+            series: location ? location.value.name : "no series",
             author: d.author.login,
             minutes: d.duration.minutes
         }
     })
 
     const ISOWeeks = d3.union(allDays.map(date => formatISOWeek(date)))
-    console.log(ISOWeeks)
-    console.log(allDays)
-    return <div>Test</div>
-    //
+
     // const categories = d3.union(data.map(d => d.date).sort((a, b) => a.getMonth() - b.getMonth()).map(d => formatDateToYYYYMM(d)))
-    const series = d3.union(fetchedData.map(d => d.author).sort())
-    //
-    // const stackingFunction = (entries: { category: string, author: string, minutes: number}[]) => {
-    //     const category = entries[0].category
-    //     const totalMinutesByAuthor = d3.rollup(
-    //         entries,
-    //         D => d3.sum(D, d => d.minutes),
-    //         d => d.author
-    //     )
-    //
-    //     // so order is established
-    //     const authors = d3.intersection(series, totalMinutesByAuthor.keys())
-    //
-    //     let currentValue = 0
-    //
-    //     const stacked: dataPoint[] = Array.from(authors).map(author => {
-    //         const valueByAuthor = totalMinutesByAuthor.get(author) || 0
-    //         const object = {
-    //             category,
-    //             author,
-    //             value: Number(valueByAuthor) || 0,
-    //             start: Number(currentValue),
-    //             end: Number(currentValue + valueByAuthor)
-    //         }
-    //         currentValue += valueByAuthor
-    //         return object
-    //     })
-    //     return stacked
-    // }
-    //
-    // const stackedValuesByCategoryAndPerson = d3.flatRollup(preppedData,
-    //     D => stackingFunction(D),
-    //     d => d.category
-    // )
-    //
+    const series = d3.union(fetchedData.map((d: any) => d.author).sort())
+
+    const stackingFunction = (entries: { category: string, author: string, minutes: number, series: string}[]) => {
+        const category = entries[0].category
+        const totalMinutesByAuthor = d3.rollup(
+            entries,
+            D => d3.sum(D, d => d.minutes),
+            d => d.series
+        )
+
+        // so order is established
+        const authors = d3.intersection(series, totalMinutesByAuthor.keys())
+
+        let currentValue = 0
+
+        const stacked: dataPoint[] = Array.from(authors).map(author => {
+            const valueByAuthor = totalMinutesByAuthor.get(author) || 0
+            const object = {
+                category,
+                author,
+                value: Number(valueByAuthor) || 0,
+                start: Number(currentValue),
+                end: Number(currentValue + valueByAuthor)
+            }
+            currentValue += valueByAuthor
+            return object
+        })
+        return stacked
+    }
+
+    const stackedValuesByCategoryAndSeries = d3.flatRollup(preppedData,
+        D => stackingFunction(D),
+        d => d.category
+    )
+
+    console.log(stackedValuesByCategoryAndSeries)
+
+    return (
+        <div>Test</div>
+    )
+
     // const flattened = d3.map(stackedValuesByCategoryAndPerson, d => d[1]).flat()
     //
     // const byPerson = d3.index(

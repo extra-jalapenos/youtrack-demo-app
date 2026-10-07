@@ -160,12 +160,12 @@
       ]
     },
     {
-      "key": "allys-widget",
-      "name": "Allys-Widget",
+      "key": "tile-chart",
+      "name": "Contributions over Time",
       "indexPath": "allys-widget/index.html",
       "extensionPoint": "DASHBOARD_WIDGET",
       "iconPath": "allys-widget/widget-icon.svg",
-      "description": "A test widget."
+      "description": "A Git-style visualization of worklogs per day."
     }
   ]
 }
