@@ -1,5 +1,5 @@
 {
-  "name": "yt-demo-app",
+  "name": "tile-plot-widget",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.app.json && vite build && youtrack-app validate dist",
     "lint": "eslint . --ext cjs,js,ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test": "echo 'no tests'",
-    "pack": "rm -rf yt-demo-app.zip && cd dist && zip -r ../yt-demo-app.zip .",
+    "pack": "rm -rf tile-plot-widget.zip && cd dist && zip -r ../tile-plot-widget.zip .",
     "load_env_vars": "set -a\nsource .env\nset +a",
     "upload": "youtrack-app upload dist --host $YOUTRACK_HOST --token $YOUTRACK_API_TOKEN"
   },

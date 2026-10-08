@@ -1,7 +1,7 @@
 {
-  "name": "yt-demo-app",
+  "name": "tile-plot-widget",
   "title": "YouTrack Demo App",
-  "description": "App utilizes available extension points for demo reasons",
+  "description": "An app that contains different plots with d3.",
   "$schema": "https://json.schemastore.org/youtrack-app.json",
   "version": "1.0.2",
   "icon": "demo-app-logo.svg",
@@ -13,152 +13,8 @@
     "url": "https://jetbrains.com",
     "email": "support@jetbrains.com"
   },
-  "youTrackApiAllowedEndpoints": [
-    {
-      "method": "POST",
-      "path": "users",
-      "description": "Create user from demo widgets."
-    },
-    {
-      "method": "DELETE",
-      "path": "issues",
-      "description": "Delete issues from demo widgets."
-    }
-  ],
+  "youTrackApiAllowedEndpoints": [],
   "widgets": [
-
-    {
-      "key": "full-page",
-      "name": "Full Page",
-      "indexPath": "full-page/index.html",
-      "extensionPoint": "MAIN_MENU_ITEM",
-      "description": "Main menu item",
-      "iconPath": "full-page/widget-icon.svg",
-      "showHeader": false
-    },
-    {
-      "key": "fields-first",
-      "name": "Cat of the day",
-      "guard": "({entity}) => entity.fields.State?.value === 'To do'",
-      "indexPath": "cats/index.html",
-      "extensionPoint": "ISSUE_FIELD_PANEL_FIRST"
-    },
-    {
-      "key": "fields-last1",
-      "name": "Cat of the day bottom",
-      "indexPath": "cats/index.html",
-      "extensionPoint": "ISSUE_FIELD_PANEL_LAST",
-      "expectedDimensions": {
-        "height": 200
-      }
-    },
-    {
-      "key": "mark",
-      "name": "Demo MD widget",
-      "indexPath": "markdown/index.html",
-      "extensionPoint": "MARKDOWN",
-      "iconPath": "jetbrains-simple.svg",
-      "settingsSchemaPath": "markdown/md-widget-settings.json"
-    },
-    {
-      "key": "issue-option",
-      "name": "Demo App Toolbar",
-      "indexPath": "modal/index.html",
-      "extensionPoint": "ISSUE_OPTIONS_MENU_ITEM",
-      "expectedDimensions": {
-        "height": 500,
-        "width": 800
-      }
-    },
-    {
-      "key": "below-s1",
-      "name": "Quote of the day top",
-      "indexPath": "quotes/index.html",
-      "extensionPoint": "ISSUE_BELOW_SUMMARY"
-    },
-    {
-      "key": "above-activity1",
-      "name": "Quote of the day bottom",
-      "indexPath": "quotes/index.html",
-      "extensionPoint": "ISSUE_ABOVE_ACTIVITY_STREAM",
-      "expectedDimensions": {
-        "height": 100
-      }
-    },
-    {
-      "key": "article-menu",
-      "name": "Article toolbar",
-      "indexPath": "modal/index.html",
-      "extensionPoint": "ARTICLE_OPTIONS_MENU_ITEM",
-      "expectedDimensions": {
-        "height": 400,
-        "width": 400
-      }
-    },
-    {
-      "key": "article-below-summary",
-      "name": "Article below summary",
-      "indexPath": "lorem/index.html",
-      "extensionPoint": "ARTICLE_BELOW_SUMMARY"
-    },
-    {
-      "key": "article-above-activity",
-      "name": "Article above activity",
-      "indexPath": "lorem/index.html",
-      "extensionPoint": "ARTICLE_ABOVE_ACTIVITY_STREAM"
-    },
-    {
-      "key": "project-settings",
-      "name": "Configure me",
-      "indexPath": "full-page/index.html",
-      "extensionPoint": "PROJECT_SETTINGS"
-    },
-    {
-      "key": "project-tab",
-      "name": "Demo Project Overview Tab",
-      "indexPath": "full-page/index.html",
-      "extensionPoint": "PROJECT_TAB"
-    },
-    {
-      "key": "admin-menu",
-      "name": "Dedicated Admin Page",
-      "indexPath": "full-page/index.html",
-      "extensionPoint": "ADMINISTRATION_MENU_ITEM"
-    },
-    {
-      "key": "hd-channel",
-      "name": "Some fancy channel",
-      "description": "This channel is about some very custom integration",
-      "iconPath": "jetbrains-simple.svg",
-      "indexPath": "full-page/index.html",
-      "extensionPoint": "HELPDESK_CHANNEL"
-    },
-    {
-      "key": "profile-tab",
-      "name": "Configure me",
-      "indexPath": "full-page/index.html",
-      "extensionPoint": "USER_PROFILE_SETTINGS"
-    },
-    {
-      "key": "user-card1",
-      "name": "User Card Widget",
-      "indexPath": "user-card/index.html",
-      "extensionPoint": "USER_CARD",
-      "expectedDimensions": {
-        "height": 10
-      }
-    },
-    {
-      "key": "dashboard-w",
-      "name": "Dashboard widget",
-      "iconPath": "jetbrains-simple.svg",
-      "indexPath": "markdown/index.html",
-      "extensionPoint": "DASHBOARD_WIDGET",
-      "settingsSchemaPath": "markdown/md-widget-settings.json",
-      "permissions": [
-        "UPDATE_USER"
-      ]
-    },
     {
       "key": "tile-chart",
       "name": "Contributions over Time",

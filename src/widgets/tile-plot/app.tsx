@@ -12,7 +12,7 @@ import TilePlot from "./TilePlot.tsx";
 const AppComponent = () => {
     const [host, setHost] = React.useState<HostAPI | null>(null);
     // const [isConfiguring, setIsConfiguring] = React.useState(false);
-
+    console.log(parent, document)
     const [config, _setConfig] = React.useState({
         from: sub(new Date(), { months: 6 }),
         to: new Date()
