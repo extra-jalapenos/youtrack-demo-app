@@ -6,13 +6,13 @@ import type { HostAPI } from "../../../@types/globals";
 import Heading from "@jetbrains/ring-ui-built/components/heading/heading";
 import { sub } from "date-fns"
 import TilePlot from "./TilePlot.tsx";
+import {ControlsHeight, ControlsHeightContext} from '@jetbrains/ring-ui-built/components/global/controls-height';
 
 // Register widget in YouTrack. To learn more, see https://www.jetbrains.com/help/youtrack/devportal-apps/apps-host-api.html
 
 const AppComponent = () => {
     const [host, setHost] = React.useState<HostAPI | null>(null);
     // const [isConfiguring, setIsConfiguring] = React.useState(false);
-    console.log(parent, document)
     const [config, _setConfig] = React.useState({
         from: sub(new Date(), { months: 6 }),
         to: new Date()
@@ -28,7 +28,6 @@ const AppComponent = () => {
 
             await setHost(newHost);
         }
-
         register();
     }, []);
 
@@ -36,8 +35,13 @@ const AppComponent = () => {
         return (
             <div>No host</div>
         )
+    console.log(host)
+    // widget rendering dimensions
+    console.log(document.documentElement.clientWidth, document.documentElement.clientHeight)
     return (
         <div className="widget">
+            <ControlsHeightContext.Provider value={ControlsHeight.S}>
+
             {
                 <TilePlot
                     host={host}
@@ -46,6 +50,7 @@ const AppComponent = () => {
                     squareSize={20}
                 />
             }
+            </ControlsHeightContext.Provider>
         </div>
     )
 };
