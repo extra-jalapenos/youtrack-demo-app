@@ -12,7 +12,8 @@ import {
     utcMondays,
     scaleBand, scaleTime, scaleLinear, scaleQuantize, scaleDiverging,
     axisBottom, axisLeft,
-    timeFormat, timeDays, InternMap
+    timeFormat, timeDays, InternMap,
+    type Selection
 } from "d3";
 import type {AlertType} from "@jetbrains/ring-ui-built/components/alert/alert";
 import {HostAPI} from "../../../@types/globals";
@@ -46,7 +47,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
 
     const padding = 0.3;
     const clientHeight = document.documentElement.clientHeight;
-    const svgHeight = clientHeight * 0.5;
+    const svgHeight = clientHeight * 0.35;
     const canvasHeight: number = svgHeight - margin.top - margin.bottom;
     const squareSize = (canvasHeight / 7) / (1 + padding);
 
@@ -107,6 +108,18 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
 
     const [summary, setSummary] = useState<SummaryItem[]>([])
 
+    const contributionCategories = [
+        "nothing",
+        "very little",
+        "less",
+        "equally",
+        "more",
+        "most",
+        "everything"
+    ];
+
+    const labelContribution = scaleQuantize([0, 1], contributionCategories);
+
     const processDataForRendering = () => {
         // extract the most needed points & name them appropriately
         const preppedData: { series: string; date: Date; column: string; row: string; minutes: number }[] = filteredData
@@ -121,13 +134,6 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
                     }
                 )
             });
-
-        const series = union(preppedData.map((d: ProcessedDataPoint) => d.series).sort())
-
-        type rolledUp = {
-            minutesTotal: number,
-            label: string
-        }
 
         const rollupFunction = (entries: ProcessedDataPoint[]): any => flatRollup(entries,
             D => {
@@ -177,35 +183,19 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
             }
         }
 
-        setRenderedData(emptyMap);
-    }
-
-    useEffect(processDataForRendering, [filteredData, perspectivePerson])
-
-    const contributionCategories = [
-        "nothing",
-        "very little",
-        "less",
-        "equally",
-        "more",
-        "most",
-        "everything"
-    ];
-
-    const labelContribution = scaleQuantize([0, 1], contributionCategories);
-
-    useEffect(() => {
         const summaryData = aggregateDaysByCategory(
-            renderedData,
+            emptyMap,
             labelContribution,
             allDays,
             perspectivePerson,
             contributionCategories
         );
-        console.log(summaryData, "summaryData");
         setSummary(summaryData);
-    }, [renderedData, perspectivePerson]);
 
+        setRenderedData(emptyMap);
+    }
+
+    useEffect(processDataForRendering, [filteredData, perspectivePerson])
     const svgTileGraphRef = useRef<SVGSVGElement>(null);
     const svgSummaryRef = useRef<SVGSVGElement>(null);
 
@@ -221,6 +211,8 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
 
         svgTileGraph.select(".axes g.x").selectChildren().remove()
         svgTileGraph.select(".axes g.y").selectChildren().remove()
+        svgSummary.select("g.canvas").selectChildren().remove()
+        svgSummary.select(".axes").selectChildren().remove()
 
         const xScale = scaleBand()
             .domain(allWeeks)
@@ -264,7 +256,17 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
         // now we have the weeks
         seriesGroups.selectAll("rect")
             .data((d: string): any => renderedData.get(d)) // rows
-            .join(enter => enter.append("rect"))
+            .join(enter => enter.append("rect")
+                .attr("opacity", 0)
+                .attr("fill", "grey")
+                .transition()
+                .duration(d => Math.random() * 750 + 250)
+                .attr("opacity", (d: any) => opacityScale(d[1].minutesTotal))
+                .attr("fill", (d: any) => colorScaleDistribution(d[1].contribution))
+                .selection(),
+                update => update,
+                exit => exit.remove()
+            )
             .attr("transform", (d: any) => `translate(0, ${yScale(d[0])})`)
             .attr("x", 0)
             .attr("y", 0)
@@ -272,8 +274,6 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
             .attr("ry", squareSize / 5)
             .attr("width", squareSize)
             .attr("height", squareSize)
-            .attr("fill", (d: any) => colorScaleDistribution(d[1].contribution))
-            .attr("opacity", (d: any) => opacityScale(d[1].minutesTotal))
             .attr("class", (d: any) => labelContribution(d[1].contribution))
             .append("title")
                 .text((d: any) => d[1].label)
@@ -283,22 +283,52 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
         
         const xScaleSummary = scaleBand()
             .domain(contributionCategories)
-            .range([0, canvasHeight]);
+            .range([0, canvasWidth])
+            .padding(0.3);
 
-        const maxOfDays = Number(max(summary, d => d.days))
+        const maxOfDays: number = Number(max(summary, d => d.days || 0))
+        if (maxOfDays === 0)
+            return;
+
         const yScaleSummary = scaleLinear()
             .domain([0, maxOfDays])
-            .range([clientHeight * 0.4, 0]);
+            .range([canvasHeight, 0]);
+
+        const xAxis = svgSummary.select("g.axes")
+            .append("g")
+            .attr("class", "x axis")
+            .attr("transform", `translate(0, ${canvasHeight})`)
+            .call(axisBottom(xScaleSummary))
+
+        const yAxis = svgSummary.select("g.axes")
+            .append("g")
+            .attr("class", "y axis")
+            .call(axisLeft(yScaleSummary));
 
         const bars = svgSummary.select("g.canvas")
             .selectAll("rect")
             .data(summary)
-            .enter()
-            .append("rect")
-            .attr("x", (d: any) => xScaleSummary(d.category))
-            .attr("y", (d: any) => yScaleSummary(d.days))
+            .join(
+                enter => enter.append("rect")
+                    .attr("y", yScaleSummary(0))
+                    .attr("height", 0)
+                    .transition()
+                    .duration(750)
+                    .attr("y", (d) => yScaleSummary(d.days))
+                    .attr("height", (d) => yScaleSummary(0) - yScaleSummary(d.days))
+                    .selection(),
+                update => update
+                    .transition()
+                    .duration(750)
+                    .attr("y", (d) => yScaleSummary(d.days))
+                    .attr("height", (d) => yScaleSummary(0) - yScaleSummary(d.days)),
+                exit => exit.remove()
+            )
+            .attr("x", (d) => xScaleSummary(d.category)!)
             .attr("width", xScaleSummary.bandwidth())
-            .attr("height", (d: any) => yScaleSummary(0) - yScaleSummary(d.days))
+            .attr("fill", (d: any) => colorScaleDistribution(labelContribution.invertExtent(d.category)[0]))
+            .append("title")
+            .text((d: any) => `${d.days} days`)
 
     }
 
@@ -326,10 +356,9 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
             <div id="tile-chart">
                 <svg
                     ref={svgTileGraphRef}
-                    viewBox={`${Math.max(0, neededWidth - canvasWidth)} 0 ${svgWidth} ${svgHeight}`}
+                    viewBox={`0 0 ${svgWidth} ${svgHeight}`}
                     width={svgWidth}
                     height={svgHeight}
-                    preserveAspectRatio={"xMaxYMinmeet"}
                 >
 
                 <g
@@ -347,10 +376,12 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
             </div>
 
             <div id="summary-chart">
-                <Text size={Text.Size.M}>Summary for {perspectivePerson}</Text>
                 <svg
                     ref={svgSummaryRef}
-                    viewBox={`0 0 ${svgWidth} ${clientHeight / 3}`}
+                    viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                    width={svgWidth}
+                    height={svgHeight}
+                    preserveAspectRatio={"xMaxYMinmeet"}
                 >
 
                     <g
