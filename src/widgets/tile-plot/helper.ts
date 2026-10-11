@@ -1,3 +1,7 @@
+import { InternMap, union, utcMondays, timeFormat } from "d3";
+
+const DEFAULT_LOCALE = "en-US";
+
 const _getWeekdayNames = (localeString: string) => Array(7)
     .fill(0)
     .map((_, i) => {
@@ -109,3 +113,89 @@ export const giniIndex = (values: number[]) => {
 
     return (2 * weightedSum) / (n * total) - (n + 1) / n;
 }
+
+export const createAllWeekdaysMap = (
+    from: Date,
+    to: Date,
+    locale: string = DEFAULT_LOCALE
+): InternMap<string, InternMap<string, any>> => {
+    const formatDateYearISOWeek = timeFormat("%Y-%V");
+    const weekdayNames = _getWeekdayNames(locale);
+
+    const allWeeks = union([from, ...utcMondays(from, to, 1), to].map(d => formatDateYearISOWeek(d)));
+
+    const result = new InternMap<string, InternMap<string, any>>();
+
+    for (const week of allWeeks) {
+        const weekdaysMap = new InternMap<string, any>();
+
+        for (let weekday = 1; weekday <= 7; weekday++) {
+            const weekdayStr = String(weekday);
+            const weekdayName = weekdayNames[weekday - 1];
+
+            weekdaysMap.set(weekdayStr, {
+                label: `${weekdayName}`,
+                minutesTotal: 0,
+                minutesByPersonAndDay: new Map(),
+                contribution: 0
+            });
+        }
+
+        result.set(week, weekdaysMap);
+    }
+
+    return result;
+};
+
+export interface SummaryItem {
+    category: string;
+    days: number;
+    minutes: number;
+    percentage: number;
+}
+
+export const aggregateDaysByCategory = (
+    renderedData: InternMap<string, InternMap<string, any>>,
+    labelContribution: (value: number) => string,
+    allDays: Date[],
+    perspectivePerson: string,
+    contributionCategories: string[]
+): SummaryItem[] => {
+    const formatDateYearISOWeek = timeFormat("%Y-%V");
+    const formatDateWeekday = timeFormat("%u");
+
+    const categoryCounts: Record<string, SummaryItem> = {};
+    contributionCategories.forEach(cat => {
+        categoryCounts[cat] = { category: cat, days: 0, minutes: 0, percentage: 0 };
+    });
+
+    allDays.forEach(date => {
+        const week = formatDateYearISOWeek(date);
+        const weekday = formatDateWeekday(date);
+
+        const weekData = renderedData.get(week);
+        if (!weekData) return;
+
+        const dayData = weekData.get(weekday);
+        if (!dayData) return;
+
+        if (dayData.minutesTotal <= 0) return;
+
+        const category = labelContribution(dayData.contribution);
+        const personMinutes = dayData.minutesByPersonAndDay?.get(perspectivePerson) || 0;
+
+        categoryCounts[category].days++;
+        categoryCounts[category].minutes += personMinutes;
+    });
+
+    const totalDays = allDays.length;
+    const results = contributionCategories.map(cat => {
+        const item = categoryCounts[cat];
+        return {
+            ...item,
+            percentage: totalDays > 0 ? Math.round((item.days / totalDays) * 100) : 0
+        };
+    });
+
+    return results;
+};

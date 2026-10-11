@@ -1,3 +1,8 @@
+body {
+  padding-right: calc(var(--ring-unit) * 1);
+  padding-bottom: var(--ring-unit);
+}
+
 text {
   fill: currentColor;
   font-family: var(--ring-font-family);
@@ -15,4 +20,3 @@ line {
 path {
   stroke: none;
 }
-

@@ -1,6 +1,6 @@
 import {useRef, useEffect, useState} from "react";
 import Button from "@jetbrains/ring-ui-built/components/button/button.js";
-import {compareContributionToRest} from "./helper.ts";
+import {compareContributionToRest, createAllWeekdaysMap, aggregateDaysByCategory, type SummaryItem} from "./helper.ts";
 import ButtonGroup from "@jetbrains/ring-ui-built/components/button-group/button-group";
 import ButtonToolbar from "@jetbrains/ring-ui-built/components/button-toolbar/button-toolbar";
 import {DataPointRaw, ProcessedDataPoint} from "./types.ts";
@@ -30,6 +30,7 @@ interface TilePlotOptions {
 
 const TilePlot = ({from, to, host}: TilePlotOptions) => {
     const allDays = timeDays(from, to, 1);
+    const locale = "de-DE"
 
     const formatDateYearISOWeek = timeFormat("%Y-%V")
     const formatDateWeekday = timeFormat("%u")
@@ -44,19 +45,21 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
     };
 
     const padding = 0.3;
-    const height = document.documentElement.clientHeight;
-    const canvasHeight: number = height * 0.7;
-    const squareSize = (canvasHeight / 7) / (1 + padding)
-    const width: number = document.documentElement.clientWidth;
-    const canvasWidth: number = width - margin.left - margin.right;
+    const clientHeight = document.documentElement.clientHeight;
+    const svgHeight = clientHeight * 0.8;
+    const canvasHeight: number = svgHeight - margin.top - margin.bottom;
+    const squareSize = (canvasHeight / 7) / (1 + padding);
+
+    const clientWidth: number = document.documentElement.clientWidth;
+    const svgWidth: number = clientWidth;
+    const canvasWidth: number = clientWidth - margin.left - margin.right;
+    const neededWidth: number = (allWeeks.size * squareSize * (1+padding)) + margin.left + margin.right;
     const shownWeeksNumber: number = Math.floor(canvasWidth / squareSize);
-    const shownWeeks = Array.from(allWeeks).slice(-shownWeeksNumber, 0);
 
     // store all sets
     const [fetchedData, setFetchedData] = useState<DataPointRaw[]>([])
 
     const [allPeople, setAllPeople] = useState<Set<string>>(new Set())
-    const [useOpacity, setUseOpacity] = useState<boolean>(true)
     const [me, setMe] = useState<{ key: string, login: string, name: string } | null>(null)
 
 
@@ -90,8 +93,6 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
 
 
     // filtering for e.g. ranges
-
-
     const [filteredData, setFilteredData] = useState<DataPointRaw[]>([])
 
     useEffect(() => {
@@ -103,6 +104,8 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
 
     // process data
     const [renderedData, setRenderedData] = useState<InternMap<string, InternMap>>(new InternMap())
+
+    const [summary, setSummary] = useState<SummaryItem[]>([])
 
     const processDataForRendering = () => {
         // extract the most needed points & name them appropriately
@@ -163,46 +166,70 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
             d => d.column,
             d => d.row
         )
+        const emptyMap = createAllWeekdaysMap(from, to, locale)
 
-        setRenderedData(summedValuesBySeriesAndCategory);
+        for (const [week, weekdaysData] of summedValuesBySeriesAndCategory) {
+            const weekdaysMapInEmpty = emptyMap.get(week)
+            if (weekdaysMapInEmpty) {
+                for (const [weekday, data] of weekdaysData) {
+                    weekdaysMapInEmpty.set(weekday, data)
+                }
+            }
+        }
+
+        setRenderedData(emptyMap);
     }
 
     useEffect(processDataForRendering, [filteredData, perspectivePerson])
 
-    const svgRef = useRef<SVGSVGElement>(null);
+    const contributionCategories = [
+        "nothing",
+        "very little",
+        "less",
+        "equally",
+        "more",
+        "most",
+        "everything"
+    ];
+
+    const labelContribution = scaleQuantize([0, 1], contributionCategories);
+
+    useEffect(() => {
+        const summaryData = aggregateDaysByCategory(
+            renderedData,
+            labelContribution,
+            allDays,
+            perspectivePerson,
+            contributionCategories
+        );
+        setSummary(summaryData);
+    }, [renderedData, perspectivePerson]);
+
+    const svgTileGraphRef = useRef<SVGSVGElement>(null);
+    const svgSummaryRef = useRef<SVGSVGElement>(null);
 
     const render = () => {
         if (renderedData === null)
             return
 
-        const svg = select(svgRef.current);
-        const canvas = svg.select("g.canvas");
+        const svgTileGraph = select(svgTileGraphRef.current);
+        const svgSummary = select(svgSummaryRef.current);
+
+        const canvas = svgTileGraph.select("g.canvas");
         canvas.selectChildren().remove()
 
-        svg.select(".axes g.x").selectChildren().remove()
-        svg.select(".axes g.y").selectChildren().remove()
+        svgTileGraph.select(".axes g.x").selectChildren().remove()
+        svgTileGraph.select(".axes g.y").selectChildren().remove()
 
         const xScale = scaleBand()
             .domain(allWeeks)
-            .range([0, canvasWidth]);
+            .range([0, neededWidth]);
 
         xScale.padding(0.3)
 
         const xScaleTime = scaleTime()
             .domain([from, to])
-            .range([0, canvasWidth]);
-
-        const contributionCategories = [
-            "nothing",
-            "very little",
-            "less",
-            "equally",
-            "more",
-            "most",
-            "everything"
-        ];
-
-        const labelContribution = scaleQuantize([0, 1], contributionCategories)
+            .range([0, neededWidth]);
 
         const opacityScale = scaleLinear().domain([0, 60]).range([0, 1])
         opacityScale.clamp(true);
@@ -212,7 +239,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
             .range([0, canvasHeight])
             .padding(0.3);
 
-        svg.select("g.axes")
+        svgTileGraph.select("g.axes")
             .append("g")
             .attr("class", "x")
             .attr("transform", `translate(0, ${canvasHeight})`)
@@ -221,7 +248,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
         const colorScaleDistribution = scaleDiverging(["#ff1f6b", "#d15bff", "#0065ff"]);
 
         // A group for each series, and a rect for each element in the series
-        const seriesGroups = svg
+        const seriesGroups = svgTileGraph
             .select("g.canvas")
             .selectAll("g.columns")
             .data(renderedData.keys())
@@ -245,13 +272,15 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
             .attr("width", squareSize)
             .attr("height", squareSize)
             .attr("fill", (d: any) => colorScaleDistribution(d[1].contribution))
-            .attr("opacity", (d: any) => useOpacity ? opacityScale(d[1].minutesTotal) : 1)
+            .attr("opacity", (d: any) => opacityScale(d[1].minutesTotal))
+            .attr("class", (d: any) => labelContribution(d[1].contribution))
             .append("title")
-            .text((d: any) => d[1].label)
+                .text((d: any) => d[1].label)
+
+
     }
 
     useEffect(render, [renderedData, filteredData, perspectivePerson]);
-
     return (
         <>
             <ButtonGroup>
@@ -270,10 +299,14 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
                 }
             </ButtonGroup>
 
-            <svg
-                ref={svgRef}
-                viewBox={`0 0 ${width} ${height}`}
-            >
+            <div style={{overflowX: "auto", overflowY: "hidden"}}>
+                <svg
+                    ref={svgTileGraph}
+                    viewBox={`${Math.max(0, neededWidth - canvasWidth)} 0 ${svgWidth} ${svgHeight}`}
+                    width={svgWidth}
+                    height={svgHeight}
+                    preserveAspectRatio={"xMaxYMinmeet"}
+                >
 
                 <g
                     className="axes"
@@ -287,9 +320,17 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
 
                 </g>
             </svg>
-            <Text  size={Text.Size.S} info >
-                {`red: ${perspectivePerson} didn't contribute | lilac: ${perspectivePerson} did their share. | blue: ${perspectivePerson} did everything.`}
-            </Text>
+            </div>
+
+            <div>
+                <Text size={Text.Size.M}>Summary for {perspectivePerson}</Text>
+                <svg
+                    ref={svgSummary}
+                    viewBox={`0 0 ${clientWidth} ${clientHeight}`}
+                >
+
+                </svg>
+            </div>
         </>
     )
 }
