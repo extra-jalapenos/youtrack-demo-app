@@ -47,6 +47,8 @@ const AppComponent = () => {
                     host={host}
                     from={config.from}
                     to={config.to}
+                    width={document.documentElement.width}
+                    height={document.documentElement.height * 0.4}
                 />
             }
             </ControlsHeightContext.Provider>

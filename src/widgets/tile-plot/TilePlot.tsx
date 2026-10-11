@@ -17,19 +17,17 @@ import {
 } from "d3";
 import type {AlertType} from "@jetbrains/ring-ui-built/components/alert/alert";
 import {HostAPI} from "../../../@types/globals";
-import Text from "@jetbrains/ring-ui-built/components/text/text";
-import Toggle from "@jetbrains/ring-ui-built/components/toggle/toggle";
-import {Grid} from "@jetbrains/ring-ui-built/components/grid/grid";
-import Row from "@jetbrains/ring-ui-built/components/grid/row";
-import Col from "@jetbrains/ring-ui-built/components/grid/col";
+import {processDataForRendering} from "./processingData.ts";
 
 interface TilePlotOptions {
     from: Date;
     to: Date;
+    width: number;
+    height: number;
     host: HostAPI | null;
 }
 
-const TilePlot = ({from, to, host}: TilePlotOptions) => {
+const TilePlot = ({from, to, width, height, host}: TilePlotOptions) => {
     const allDays = timeDays(from, to, 1);
     const locale = "de-DE"
 
@@ -39,21 +37,14 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
     const allWeeks = union([from, ...utcMondays(from, to, 1), to].map(d => formatDateYearISOWeek(d)))
 
     const margin = {
-        left: 0,
-        top: 5,
-        right: 5,
-        bottom: 25
+        left: 0, top: 5, right: 5, bottom: 25
     };
 
     const padding = 0.3;
-    const clientHeight = document.documentElement.clientHeight;
-    const svgHeight = clientHeight * 0.35;
-    const canvasHeight: number = svgHeight - margin.top - margin.bottom;
+    const canvasHeight: number = height - margin.top - margin.bottom;
     const squareSize = (canvasHeight / 7) / (1 + padding);
 
-    const clientWidth: number = document.documentElement.clientWidth;
-    const svgWidth: number = clientWidth;
-    const canvasWidth: number = clientWidth - margin.left - margin.right;
+    const canvasWidth: number = width - margin.left - margin.right;
     const neededWidth: number = (allWeeks.size * squareSize * (1+padding)) + margin.left + margin.right;
     const shownWeeksNumber: number = Math.floor(canvasWidth / squareSize);
 
@@ -63,7 +54,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
     const [allPeople, setAllPeople] = useState<Set<string>>(new Set())
     const [me, setMe] = useState<{ key: string, login: string, name: string } | null>(null)
 
-
+    // get Worklogs if from / to changes
     useEffect(() => {
         const getWorklogs = async (from: Date, to: Date) => {
             if (host === null) {
@@ -92,7 +83,6 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
         getWorklogs(from, to)
     }, [from, to]);
 
-
     // filtering for e.g. ranges
     const [filteredData, setFilteredData] = useState<DataPointRaw[]>([])
 
@@ -101,7 +91,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
         setFilteredData(filtered)
     }, [fetchedData]);
 
-    const [perspectivePerson, setPerspective] = useState<string>(me ? me.name : "Robert")
+    const [perspectivePerson, setPerspective] = useState<string>(me ? me.name : "")
 
     // process data
     const [renderedData, setRenderedData] = useState<InternMap<string, InternMap>>(new InternMap())
@@ -118,131 +108,58 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
         "everything"
     ];
 
+
     const labelContribution = scaleQuantize([0, 1], contributionCategories);
 
-    const processDataForRendering = () => {
-        // extract the most needed points & name them appropriately
-        const preppedData: { series: string; date: Date; column: string; row: string; minutes: number }[] = filteredData
-            .map((d: DataPointRaw) => {
-                return (
-                    {
-                        series: d.author.login,
-                        date: new Date(d.date),
-                        column: formatDateYearISOWeek(new Date(d.date)),
-                        row: formatDateWeekday(new Date(d.date)),
-                        minutes: d.duration.minutes
-                    }
-                )
-            });
-
-        const rollupFunction = (entries: ProcessedDataPoint[]): any => flatRollup(entries,
-            D => {
-                const minutesTotal = sum(D, d => d.minutes)
-                const minutesByPersonAndDay = rollup(entries,
-                    entriesOfPerson => {
-                        return sum(entriesOfPerson, d => d.minutes)
-                    },
-                    d => d.series
-                )
-                const dateString = D[0].date.toLocaleDateString([], { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })
-                const allOtherPeople: string[] = Array.from(allPeople.keys())
-                    .filter(person => person !== perspectivePerson)
-
-                const focusPersonContribution = minutesByPersonAndDay.get(perspectivePerson) || 0
-
-                const allPeoplesContributions = allOtherPeople.map(person => minutesByPersonAndDay.get(person) || 0)
-                const averageContribution = allOtherPeople.length === 0 ? 0 : sum(allPeoplesContributions) / allOtherPeople.length
-                const contribution = compareContributionToRest([focusPersonContribution, averageContribution])
-
-
-                const stringLabels = Array.from(minutesByPersonAndDay.entries())
-                    .map(([personName, minutes]) => `${personName}: ${minutes}m (${(minutes / minutesTotal * 100).toFixed(0)} %)`)
-                const label = dateString + "\n" + stringLabels.join("\n")
-                return {
-                    label,
-                    minutesTotal,
-                    minutesByPersonAndDay,
-                    contribution
-                }
-            }
-        )
-
-        const summedValuesBySeriesAndCategory: InternMap = rollup(preppedData,
-            D => rollupFunction(D),
-            d => d.column,
-            d => d.row
-        )
-        const emptyMap = createAllWeekdaysMap(from, to, locale)
-
-        for (const [week, weekdaysData] of summedValuesBySeriesAndCategory) {
-            const weekdaysMapInEmpty = emptyMap.get(week)
-            if (weekdaysMapInEmpty) {
-                for (const [weekday, data] of weekdaysData) {
-                    weekdaysMapInEmpty.set(weekday, data)
-                }
-            }
-        }
+    const processing = () => {
+       const processedData = processDataForRendering(filteredData)
 
         const summaryData = aggregateDaysByCategory(
-            emptyMap,
+            processedData,
             labelContribution,
             allDays,
             perspectivePerson,
             contributionCategories
         );
         setSummary(summaryData);
-
-        setRenderedData(emptyMap);
+        setRenderedData(processedData);
     }
 
-    useEffect(processDataForRendering, [filteredData, perspectivePerson])
-    const svgTileGraphRef = useRef<SVGSVGElement>(null);
-    const svgSummaryRef = useRef<SVGSVGElement>(null);
+    useEffect(processing, [filteredData, perspectivePerson])
+    let xScale = scaleBand()
+            .domain(allWeeks)
+            .range([0, neededWidth])
+            .padding(0.3);
 
-    const render = () => {
+    let yScale = scaleBand()
+        .domain(["1", "2", "3", "4", "5", "6", "7"])
+        .range([0, canvasHeight])
+        .padding(0.3);
+
+    let xAxis
+    let yAxis
+
+    const svgTileGraphRef = useRef<SVGSVGElement>(null);
+    const svgTileGraph = select(svgTileGraphRef.current);
+
+    const firstRender = () => {
         if (renderedData === null)
             return
 
-        const svgTileGraph = select(svgTileGraphRef.current);
-        const svgSummary = select(svgSummaryRef.current);
-
         const canvas = svgTileGraph.select("g.canvas");
-        canvas.selectChildren().remove()
-
-        svgTileGraph.select(".axes g.x").selectChildren().remove()
-        svgTileGraph.select(".axes g.y").selectChildren().remove()
-        svgSummary.select("g.canvas").selectChildren().remove()
-        svgSummary.select(".axes").selectChildren().remove()
-
-        const xScale = scaleBand()
-            .domain(allWeeks)
-            .range([0, neededWidth]);
-
-        xScale.padding(0.3)
-
-        const xScaleTime = scaleTime()
-            .domain([from, to])
-            .range([0, neededWidth]);
-
+        const axes = svgTileGraph.select("g.axes");
         const opacityScale = scaleLinear().domain([0, 60]).range([0, 1])
         opacityScale.clamp(true);
 
-        const yScale = scaleBand()
-            .domain(["1", "2", "3", "4", "5", "6", "7"])
-            .range([0, canvasHeight])
-            .padding(0.3);
-
-        svgTileGraph.select("g.axes")
-            .append("g")
-            .attr("class", "x")
-            .attr("transform", `translate(0, ${canvasHeight})`)
-            .call(axisBottom(xScaleTime).ticks(5))
+        xAxis = axes
+                .append("g")
+                .attr("class", "x")
+                .attr("transform", `translate(0, ${canvasHeight})`)
 
         const colorScaleDistribution = scaleDiverging(["#ff1f6b", "#d15bff", "#0065ff"]);
 
         // A group for each series, and a rect for each element in the series
-        const seriesGroups = svgTileGraph
-            .select("g.canvas")
+        const seriesGroups = canvas
             .selectAll("g.columns")
             .data(renderedData.keys())
             .join(
@@ -277,62 +194,65 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
             .attr("class", (d: any) => labelContribution(d[1].contribution))
             .append("title")
                 .text((d: any) => d[1].label)
-
-        if (summary.length === 0)
-            return
-        
-        const xScaleSummary = scaleBand()
-            .domain(contributionCategories)
-            .range([0, canvasWidth])
-            .padding(0.3);
-
-        const maxOfDays: number = Number(max(summary, d => d.days || 0))
-        if (maxOfDays === 0)
-            return;
-
-        const yScaleSummary = scaleLinear()
-            .domain([0, maxOfDays])
-            .range([canvasHeight, 0]);
-
-        const xAxis = svgSummary.select("g.axes")
-            .append("g")
-            .attr("class", "x axis")
-            .attr("transform", `translate(0, ${canvasHeight})`)
-            .call(axisBottom(xScaleSummary))
-
-        const yAxis = svgSummary.select("g.axes")
-            .append("g")
-            .attr("class", "y axis")
-            .call(axisLeft(yScaleSummary));
-
-        const bars = svgSummary.select("g.canvas")
-            .selectAll("rect")
-            .data(summary)
-            .join(
-                enter => enter.append("rect")
-                    .attr("y", yScaleSummary(0))
-                    .attr("height", 0)
-                    .transition()
-                    .duration(750)
-                    .attr("y", (d) => yScaleSummary(d.days))
-                    .attr("height", (d) => yScaleSummary(0) - yScaleSummary(d.days))
-                    .selection(),
-                update => update
-                    .transition()
-                    .duration(750)
-                    .attr("y", (d) => yScaleSummary(d.days))
-                    .attr("height", (d) => yScaleSummary(0) - yScaleSummary(d.days)),
-                exit => exit.remove()
-            )
-            .attr("x", (d) => xScaleSummary(d.category)!)
-            .attr("width", xScaleSummary.bandwidth())
-            .attr("fill", (d: any) => colorScaleDistribution(labelContribution.invertExtent(d.category)[0]))
-            .append("title")
-            .text((d: any) => `${d.days} days`)
+        //
+        // if (summary.length === 0)
+        //     return
+        //
+        // const xScaleSummary = scaleBand()
+        //     .domain(contributionCategories)
+        //     .range([0, canvasWidth])
+        //     .padding(0.3);
+        //
+        // const maxOfDays: number = Number(max(summary, d => d.days || 0))
+        // if (maxOfDays === 0)
+        //     return;
+        //
+        // const yScaleSummary = scaleLinear()
+        //     .domain([0, maxOfDays])
+        //     .range([canvasHeight, 0]);
+        //
+        // const xAxis = svgSummary.select("g.axes")
+        //     .append("g")
+        //     .attr("class", "x axis")
+        //     .attr("transform", `translate(0, ${canvasHeight})`)
+        //     .call(axisBottom(xScaleSummary))
+        //
+        // const yAxis = svgSummary.select("g.axes")
+        //     .append("g")
+        //     .attr("class", "y axis")
+        //     .call(axisLeft(yScaleSummary));
+        //
+        // const bars = svgSummary.select("g.canvas")
+        //     .selectAll("rect")
+        //     .data(summary)
+        //     .join(
+        //         enter => enter.append("rect")
+        //             .attr("y", yScaleSummary(0))
+        //             .attr("height", 0)
+        //             .transition()
+        //             .duration(750)
+        //             .attr("y", (d) => yScaleSummary(d.days))
+        //             .attr("height", (d) => yScaleSummary(0) - yScaleSummary(d.days))
+        //             .selection(),
+        //         update => update
+        //             .transition()
+        //             .duration(750)
+        //             .attr("y", (d) => yScaleSummary(d.days))
+        //             .attr("height", (d) => yScaleSummary(0) - yScaleSummary(d.days)),
+        //         exit => exit.remove()
+        //     )
+        //     .attr("x", (d) => xScaleSummary(d.category)!)
+        //     .attr("width", xScaleSummary.bandwidth())
+        //     .attr("fill", (d: any) => colorScaleDistribution(labelContribution.invertExtent(d.category)[0]))
+        //     .append("title")
+        //     .text((d: any) => `${d.days} days`)
 
     }
 
-    useEffect(render, [renderedData, filteredData, perspectivePerson]);
+    useEffect(firstRender, []);
+    useEffect(() => {
+        console.log("rerendering")
+    }, [renderedData, perspectivePerson]);
     return (
         <>
             <div id="controls">
@@ -353,12 +273,11 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
                 </ButtonGroup>
             </div>
 
-            <div id="tile-chart">
-                <svg
-                    ref={svgTileGraphRef}
-                    viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                    width={svgWidth}
-                    height={svgHeight}
+            <svg
+                ref={svgTileGraphRef}
+                viewBox={`0 0 ${width} ${height}`}
+                width={width}
+                height={height}
                 >
 
                 <g
@@ -373,30 +292,6 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
 
                 </g>
             </svg>
-            </div>
-
-            <div id="summary-chart">
-                <svg
-                    ref={svgSummaryRef}
-                    viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                    width={svgWidth}
-                    height={svgHeight}
-                    preserveAspectRatio={"xMaxYMinmeet"}
-                >
-
-                    <g
-                        className="axes"
-                        transform={`translate(${margin.left}, ${margin.top})`}
-                    >
-                    </g>
-                    <g
-                        className="canvas"
-                        transform={`translate(${margin.left}, ${margin.top})`}
-                    >
-
-                    </g>
-                </svg>
-            </div>
         </>
     )
 }
