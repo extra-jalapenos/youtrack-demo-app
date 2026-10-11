@@ -15,7 +15,7 @@ const AppComponent = () => {
     const [host, setHost] = React.useState<HostAPI | null>(null);
     // const [isConfiguring, setIsConfiguring] = React.useState(false);
     const [config, _setConfig] = React.useState({
-        from: sub(new Date(), { months: 3 }),
+        from: sub(new Date(), { months: 6 }),
         to: new Date()
     })
 

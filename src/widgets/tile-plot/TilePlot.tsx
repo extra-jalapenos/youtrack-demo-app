@@ -8,7 +8,7 @@ import {
     select,
     union,
     rollup, flatRollup,
-    sum, extent,
+    sum, extent, max,
     utcMondays,
     scaleBand, scaleTime, scaleLinear, scaleQuantize, scaleDiverging,
     axisBottom, axisLeft,
@@ -38,15 +38,15 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
     const allWeeks = union([from, ...utcMondays(from, to, 1), to].map(d => formatDateYearISOWeek(d)))
 
     const margin = {
-        left: 25,
-        top: 25,
-        right: 25,
+        left: 0,
+        top: 5,
+        right: 5,
         bottom: 25
     };
 
     const padding = 0.3;
     const clientHeight = document.documentElement.clientHeight;
-    const svgHeight = clientHeight * 0.8;
+    const svgHeight = clientHeight * 0.5;
     const canvasHeight: number = svgHeight - margin.top - margin.bottom;
     const squareSize = (canvasHeight / 7) / (1 + padding);
 
@@ -202,6 +202,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
             perspectivePerson,
             contributionCategories
         );
+        console.log(summaryData, "summaryData");
         setSummary(summaryData);
     }, [renderedData, perspectivePerson]);
 
@@ -243,7 +244,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
             .append("g")
             .attr("class", "x")
             .attr("transform", `translate(0, ${canvasHeight})`)
-            .call(axisBottom(xScaleTime))
+            .call(axisBottom(xScaleTime).ticks(5))
 
         const colorScaleDistribution = scaleDiverging(["#ff1f6b", "#d15bff", "#0065ff"]);
 
@@ -277,31 +278,54 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
             .append("title")
                 .text((d: any) => d[1].label)
 
+        if (summary.length === 0)
+            return
+        
+        const xScaleSummary = scaleBand()
+            .domain(contributionCategories)
+            .range([0, canvasHeight]);
+
+        const maxOfDays = Number(max(summary, d => d.days))
+        const yScaleSummary = scaleLinear()
+            .domain([0, maxOfDays])
+            .range([clientHeight * 0.4, 0]);
+
+        const bars = svgSummary.select("g.canvas")
+            .selectAll("rect")
+            .data(summary)
+            .enter()
+            .append("rect")
+            .attr("x", (d: any) => xScaleSummary(d.category))
+            .attr("y", (d: any) => yScaleSummary(d.days))
+            .attr("width", xScaleSummary.bandwidth())
+            .attr("height", (d: any) => yScaleSummary(0) - yScaleSummary(d.days))
 
     }
 
     useEffect(render, [renderedData, filteredData, perspectivePerson]);
     return (
         <>
-            <ButtonGroup>
-                {Array.from(allPeople)
-                    .map((person: string) => {
-                        return (
-                            <Button
-                                onClick={() => setPerspective(person)}
-                                key={person}
-                                active={perspectivePerson === person}
-                            >
-                                {person}
-                            </Button>
-                        )
-                    })
-                }
-            </ButtonGroup>
+            <div id="controls">
+                <ButtonGroup>
+                    {Array.from(allPeople)
+                        .map((person: string) => {
+                            return (
+                                <Button
+                                    onClick={() => setPerspective(person)}
+                                    key={person}
+                                    active={perspectivePerson === person}
+                                >
+                                    {person}
+                                </Button>
+                            )
+                        })
+                    }
+                </ButtonGroup>
+            </div>
 
-            <div style={{overflowX: "auto", overflowY: "hidden"}}>
+            <div id="tile-chart">
                 <svg
-                    ref={svgTileGraph}
+                    ref={svgTileGraphRef}
                     viewBox={`${Math.max(0, neededWidth - canvasWidth)} 0 ${svgWidth} ${svgHeight}`}
                     width={svgWidth}
                     height={svgHeight}
@@ -322,13 +346,24 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
             </svg>
             </div>
 
-            <div>
+            <div id="summary-chart">
                 <Text size={Text.Size.M}>Summary for {perspectivePerson}</Text>
                 <svg
-                    ref={svgSummary}
-                    viewBox={`0 0 ${clientWidth} ${clientHeight}`}
+                    ref={svgSummaryRef}
+                    viewBox={`0 0 ${svgWidth} ${clientHeight / 3}`}
                 >
 
+                    <g
+                        className="axes"
+                        transform={`translate(${margin.left}, ${margin.top})`}
+                    >
+                    </g>
+                    <g
+                        className="canvas"
+                        transform={`translate(${margin.left}, ${margin.top})`}
+                    >
+
+                    </g>
                 </svg>
             </div>
         </>

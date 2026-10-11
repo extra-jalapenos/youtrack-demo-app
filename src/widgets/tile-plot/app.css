@@ -3,6 +3,26 @@ body {
   padding-bottom: var(--ring-unit);
 }
 
+div.widget {
+  display: grid;
+  grid-template-areas: "controls"
+                      "tile-chart"
+                      "summary-chart";
+  gap: calc(var(--ring-unit) * 2);
+}
+
+#controls {
+  grid-area: controls;
+}
+
+#summary-chart {
+  grid-area: summary-chart;
+}
+
+#tile-chart {
+  grid-area: tile-chart;
+}
+
 text {
   fill: currentColor;
   font-family: var(--ring-font-family);
