@@ -11,6 +11,7 @@ import {ControlsHeight, ControlsHeightContext} from '@jetbrains/ring-ui-built/co
 // Register widget in YouTrack. To learn more, see https://www.jetbrains.com/help/youtrack/devportal-apps/apps-host-api.html
 
 const AppComponent = () => {
+
     const [host, setHost] = React.useState<HostAPI | null>(null);
     // const [isConfiguring, setIsConfiguring] = React.useState(false);
     const [config, _setConfig] = React.useState({
@@ -28,6 +29,7 @@ const AppComponent = () => {
 
             await setHost(newHost);
         }
+
         register();
     }, []);
 
@@ -35,19 +37,16 @@ const AppComponent = () => {
         return (
             <div>No host</div>
         )
-    console.log(host)
+
     // widget rendering dimensions
-    console.log(document.documentElement.clientWidth, document.documentElement.clientHeight)
     return (
         <div className="widget">
             <ControlsHeightContext.Provider value={ControlsHeight.S}>
-
             {
                 <TilePlot
                     host={host}
                     from={config.from}
                     to={config.to}
-                    squareSize={20}
                 />
             }
             </ControlsHeightContext.Provider>

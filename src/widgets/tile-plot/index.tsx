@@ -7,7 +7,7 @@ import {ControlsHeight, ControlsHeightContext} from '@jetbrains/ring-ui-built/co
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <React.StrictMode>
         <ControlsHeightContext.Provider value={ControlsHeight.S}>
-            <App/>
+            <App />
         </ControlsHeightContext.Provider>
     </React.StrictMode>
 );

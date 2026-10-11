@@ -1,0 +1,12 @@
+## goal
+
+The interactive chart module will be shown in various dimensions of clientWidth and clientHeight.
+It should be so that it always takes up 70% of the height.
+The tiles should still be squares, so obviously this will effect the range shown. If the range is too wide, the to-Date is always shown (on the right end).
+However, the user may scroll horizontally by scrolling while hovering over the tiles to the left to previous rows.
+
+## Criteria
+
+Employ d3s methods for scrolling and updating the axis if needed.
+To guarantee a smooth user experience, avoid refreshing the data / refetching.
+When resizing, the re-rendering should feel smooth and non-jumpy to the user.

@@ -25,18 +25,16 @@ import Col from "@jetbrains/ring-ui-built/components/grid/col";
 interface TilePlotOptions {
     from: Date;
     to: Date;
-    squareSize: number;
-    host: HostAPI;
+    host: HostAPI | null;
 }
 
-const TilePlot = ({from, to, squareSize, host}: TilePlotOptions) => {
+const TilePlot = ({from, to, host}: TilePlotOptions) => {
     const allDays = timeDays(from, to, 1);
 
     const formatDateYearISOWeek = timeFormat("%Y-%V")
     const formatDateWeekday = timeFormat("%u")
 
     const allWeeks = union([from, ...utcMondays(from, to, 1), to].map(d => formatDateYearISOWeek(d)))
-
 
     const margin = {
         left: 25,
@@ -46,17 +44,19 @@ const TilePlot = ({from, to, squareSize, host}: TilePlotOptions) => {
     };
 
     const padding = 0.3;
-
-    const canvasHeight: number = squareSize * 7 * (1 + padding);
-    const canvasWidth: number = allWeeks.size * squareSize * (1 + padding);
-    const height = canvasHeight + margin.top + margin.bottom;
-    const width: number = canvasWidth + margin.left + margin.right;
+    const height = document.documentElement.clientHeight;
+    const canvasHeight: number = height * 0.7;
+    const squareSize = (canvasHeight / 7) / (1 + padding)
+    const width: number = document.documentElement.clientWidth;
+    const canvasWidth: number = width - margin.left - margin.right;
+    const shownWeeksNumber: number = Math.floor(canvasWidth / squareSize);
+    const shownWeeks = Array.from(allWeeks).slice(-shownWeeksNumber, 0);
 
     // store all sets
     const [fetchedData, setFetchedData] = useState<DataPointRaw[]>([])
 
     const [allPeople, setAllPeople] = useState<Set<string>>(new Set())
-    const [useOpacity, setUseOpacity] = useState<boolean>(false)
+    const [useOpacity, setUseOpacity] = useState<boolean>(true)
     const [me, setMe] = useState<{ key: string, login: string, name: string } | null>(null)
 
 
@@ -70,12 +70,14 @@ const TilePlot = ({from, to, squareSize, host}: TilePlotOptions) => {
             try {
                 const configYoutrackWorkitems = {
                     query: {
+                        query: "Subtask of: TODO-380",
+                        from: from.toISOString().slice(0, 10),
+                        to: to.toISOString().slice(0, 10),
                         fields: "id,author(name,login),duration(minutes),date,text,issue(id,customFields(id,name,value(id,name)))"
                     }
                 }
                 const responseYoutrack: any = await host.fetchYouTrack(`workItems`, configYoutrackWorkitems)
-                console.log(responseYoutrack[0])
-                const allPeopleArray = responseYoutrack.map((d: DataPointRaw) => d.author.name).sort()
+                const allPeopleArray = responseYoutrack.map((d: DataPointRaw) => d.author.login).sort()
                 setAllPeople(new Set(allPeopleArray));
                 setPerspective(allPeopleArray[0])
                 setFetchedData(responseYoutrack)
@@ -105,11 +107,10 @@ const TilePlot = ({from, to, squareSize, host}: TilePlotOptions) => {
     const processDataForRendering = () => {
         // extract the most needed points & name them appropriately
         const preppedData: { series: string; date: Date; column: string; row: string; minutes: number }[] = filteredData
-            //.filter((d: DataPointRaw) => showPeople.includes(d.author.name))
             .map((d: DataPointRaw) => {
                 return (
                     {
-                        series: d.author.name,
+                        series: d.author.login,
                         date: new Date(d.date),
                         column: formatDateYearISOWeek(new Date(d.date)),
                         row: formatDateWeekday(new Date(d.date)),
@@ -139,9 +140,11 @@ const TilePlot = ({from, to, squareSize, host}: TilePlotOptions) => {
                     .filter(person => person !== perspectivePerson)
 
                 const focusPersonContribution = minutesByPersonAndDay.get(perspectivePerson) || 0
+
                 const allPeoplesContributions = allOtherPeople.map(person => minutesByPersonAndDay.get(person) || 0)
-                const averageContribution = sum(allPeoplesContributions) / allOtherPeople.length
+                const averageContribution = allOtherPeople.length === 0 ? 0 : sum(allPeoplesContributions) / allOtherPeople.length
                 const contribution = compareContributionToRest([focusPersonContribution, averageContribution])
+
 
                 const stringLabels = Array.from(minutesByPersonAndDay.entries())
                     .map(([personName, minutes]) => `${personName}: ${minutes}m (${(minutes / minutesTotal * 100).toFixed(0)} %)`)
@@ -208,11 +211,6 @@ const TilePlot = ({from, to, squareSize, host}: TilePlotOptions) => {
             .domain(["1", "2", "3", "4", "5", "6", "7"])
             .range([0, canvasHeight])
             .padding(0.3);
-        //
-        // svg.select("g.axes")
-        //     .append("g")
-        //     .attr("class", "y")
-        //     .call(axisLeft(yScale))
 
         svg.select("g.axes")
             .append("g")
@@ -220,16 +218,7 @@ const TilePlot = ({from, to, squareSize, host}: TilePlotOptions) => {
             .attr("transform", `translate(0, ${canvasHeight})`)
             .call(axisBottom(xScaleTime))
 
-        // const colorScale = d3.scaleOrdinal()
-        //     .domain(renderedData.keys())
-        //     .range(renderedData.keys().map((_, i) =>
-        //         d3.interpolateRdYlBu(i / (series.size - 1))
-        //     ))
-        //     .unknown("grey");
-
-        //const colorScaleDistribution = scaleDiverging(["#00061F", "#00FF41", "white"]);
         const colorScaleDistribution = scaleDiverging(["#ff1f6b", "#d15bff", "#0065ff"]);
-        // svg.select(".axes g.y").append("g").attr("class", "x").call(d3.axisLeft(yScale));
 
         // A group for each series, and a rect for each element in the series
         const seriesGroups = svg
@@ -261,34 +250,25 @@ const TilePlot = ({from, to, squareSize, host}: TilePlotOptions) => {
             .text((d: any) => d[1].label)
     }
 
-    useEffect(render, [renderedData, filteredData, perspectivePerson, useOpacity]);
+    useEffect(render, [renderedData, filteredData, perspectivePerson]);
 
     return (
         <>
-            <Grid>
-                <Row>
-                    <Col xs>
-                        <ButtonGroup>
-                            {Array.from(allPeople)
-                                .map((person: string) => {
-                                    return (
-                                        <Button
-                                            onClick={() => setPerspective(person)}
-                                            key={person}
-                                            active={perspectivePerson === person}
-                                        >
-                                            {person}
-                                        </Button>
-                                    )
-                                })
-                            }
-                        </ButtonGroup>
-                    </Col>
-                    <Col xs>
-                        <Toggle onClick={() => setUseOpacity(!useOpacity)} /> <Text size={Text.Size.S}>variable opacity</Text>
-                    </Col>
-                </Row>
-            </Grid>
+            <ButtonGroup>
+                {Array.from(allPeople)
+                    .map((person: string) => {
+                        return (
+                            <Button
+                                onClick={() => setPerspective(person)}
+                                key={person}
+                                active={perspectivePerson === person}
+                            >
+                                {person}
+                            </Button>
+                        )
+                    })
+                }
+            </ButtonGroup>
 
             <svg
                 ref={svgRef}
