@@ -18,6 +18,7 @@ import {
 import type {AlertType} from "@jetbrains/ring-ui-built/components/alert/alert";
 import {HostAPI} from "../../../@types/globals";
 import {processDataForRendering} from "./processingData.ts";
+import Text from "@jetbrains/ring-ui-built/components/text/text";
 
 interface TilePlotOptions {
     from: Date;
@@ -27,7 +28,8 @@ interface TilePlotOptions {
     host: HostAPI | null;
 }
 
-const TilePlot = ({from, to, width, height, host}: TilePlotOptions) => {
+
+const TilePlot = ({from, to, host}: TilePlotOptions) => {
     const allDays = timeDays(from, to, 1);
     const locale = "de-DE"
 
@@ -41,17 +43,30 @@ const TilePlot = ({from, to, width, height, host}: TilePlotOptions) => {
     };
 
     const padding = 0.3;
+    const [height, setHeight] = useState(0);
+    const [width, setWidth] = useState(0);
+
+
+    const svgTileGraphRef = useRef<SVGSVGElement>(null);
+    useEffect(() => {
+        if (!svgTileGraphRef)
+            return
+        setWidth(svgTileGraphRef.current.clientWidth);
+        setHeight(svgTileGraphRef.current.clientHeight);
+    }, []);
+    const svgTileGraph = select(svgTileGraphRef.current);
+
     const canvasHeight: number = height - margin.top - margin.bottom;
     const squareSize = (canvasHeight / 7) / (1 + padding);
 
     const canvasWidth: number = width - margin.left - margin.right;
-    const neededWidth: number = (allWeeks.size * squareSize * (1+padding)) + margin.left + margin.right;
+    const neededWidth: number = (allWeeks.size * squareSize * (1 + padding)) + margin.left + margin.right;
     const shownWeeksNumber: number = Math.floor(canvasWidth / squareSize);
 
     // store all sets
     const [fetchedData, setFetchedData] = useState<DataPointRaw[]>([])
 
-    const [allPeople, setAllPeople] = useState<Set<string>>(new Set())
+    const [allPeople, setAllPeople] = useState<Set<string>>(new Set(["Ally", "niemand"]))
     const [me, setMe] = useState<{ key: string, login: string, name: string } | null>(null)
 
     // get Worklogs if from / to changes
@@ -112,7 +127,8 @@ const TilePlot = ({from, to, width, height, host}: TilePlotOptions) => {
     const labelContribution = scaleQuantize([0, 1], contributionCategories);
 
     const processing = () => {
-       const processedData = processDataForRendering(filteredData)
+
+        const processedData = processDataForRendering(filteredData)
 
         const summaryData = aggregateDaysByCategory(
             processedData,
@@ -125,11 +141,11 @@ const TilePlot = ({from, to, width, height, host}: TilePlotOptions) => {
         setRenderedData(processedData);
     }
 
-    useEffect(processing, [filteredData, perspectivePerson])
+    useEffect(() => console.log("hi"), [filteredData, perspectivePerson])
     let xScale = scaleBand()
-            .domain(allWeeks)
-            .range([0, neededWidth])
-            .padding(0.3);
+        .domain(allWeeks)
+        .range([0, neededWidth])
+        .padding(0.3);
 
     let yScale = scaleBand()
         .domain(["1", "2", "3", "4", "5", "6", "7"])
@@ -139,8 +155,6 @@ const TilePlot = ({from, to, width, height, host}: TilePlotOptions) => {
     let xAxis
     let yAxis
 
-    const svgTileGraphRef = useRef<SVGSVGElement>(null);
-    const svgTileGraph = select(svgTileGraphRef.current);
 
     const firstRender = () => {
         if (renderedData === null)
@@ -152,9 +166,9 @@ const TilePlot = ({from, to, width, height, host}: TilePlotOptions) => {
         opacityScale.clamp(true);
 
         xAxis = axes
-                .append("g")
-                .attr("class", "x")
-                .attr("transform", `translate(0, ${canvasHeight})`)
+            .append("g")
+            .attr("class", "x")
+            .attr("transform", `translate(0, ${canvasHeight})`)
 
         const colorScaleDistribution = scaleDiverging(["#ff1f6b", "#d15bff", "#0065ff"]);
 
@@ -174,13 +188,13 @@ const TilePlot = ({from, to, width, height, host}: TilePlotOptions) => {
         seriesGroups.selectAll("rect")
             .data((d: string): any => renderedData.get(d)) // rows
             .join(enter => enter.append("rect")
-                .attr("opacity", 0)
-                .attr("fill", "grey")
-                .transition()
-                .duration(d => Math.random() * 750 + 250)
-                .attr("opacity", (d: any) => opacityScale(d[1].minutesTotal))
-                .attr("fill", (d: any) => colorScaleDistribution(d[1].contribution))
-                .selection(),
+                    .attr("opacity", 0)
+                    .attr("fill", "grey")
+                    .transition()
+                    .duration(d => Math.random() * 750 + 250)
+                    .attr("opacity", (d: any) => opacityScale(d[1].minutesTotal))
+                    .attr("fill", (d: any) => colorScaleDistribution(d[1].contribution))
+                    .selection(),
                 update => update,
                 exit => exit.remove()
             )
@@ -193,7 +207,7 @@ const TilePlot = ({from, to, width, height, host}: TilePlotOptions) => {
             .attr("height", squareSize)
             .attr("class", (d: any) => labelContribution(d[1].contribution))
             .append("title")
-                .text((d: any) => d[1].label)
+            .text((d: any) => d[1].label)
         //
         // if (summary.length === 0)
         //     return
@@ -255,7 +269,10 @@ const TilePlot = ({from, to, width, height, host}: TilePlotOptions) => {
     }, [renderedData, perspectivePerson]);
     return (
         <>
-            <div id="controls">
+            <div
+                id="controls"
+                className="component"
+            >
                 <ButtonGroup>
                     {Array.from(allPeople)
                         .map((person: string) => {
@@ -273,25 +290,42 @@ const TilePlot = ({from, to, width, height, host}: TilePlotOptions) => {
                 </ButtonGroup>
             </div>
 
-            <svg
-                ref={svgTileGraphRef}
-                viewBox={`0 0 ${width} ${height}`}
-                width={width}
-                height={height}
+            <div
+                className="component"
+            >
+                <svg
+                    ref={svgTileGraphRef}
+                    viewBox={`0 0 ${width} ${height}`}
+                    width={width}
+                    height={height}
                 >
 
-                <g
-                    className="axes"
-                    transform={`translate(${margin.left}, ${margin.top})`}
-                >
-                </g>
-                <g
-                    className="canvas"
-                    transform={`translate(${margin.left}, ${margin.top})`}
-                >
+                    <g
+                        className="axes"
+                        transform={`translate(${margin.left}, ${margin.top})`}
+                    >
+                    </g>
+                    <canvas
+                        className="canvas"
+                        transform={`translate(${margin.left}, ${margin.top})`}
+                    >
+                        <rect
+                            x={-10}
+                            y={-20}
+                            width={30}
+                            height={40}
+                            fill="red"
+                        >
 
-                </g>
-            </svg>
+                        </rect>
+                        <Text>
+                            {width}
+                        </Text>
+
+                    </canvas>
+                </svg>
+            </div>
+
         </>
     )
 }

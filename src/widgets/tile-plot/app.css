@@ -1,26 +1,19 @@
 body {
   padding-right: calc(var(--ring-unit) * 1);
   padding-bottom: var(--ring-unit);
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+}
+#root {
+  height: 100%;
 }
 
 div.widget {
   display: grid;
-  grid-template-areas: "controls"
-                      "tile-chart"
-                      "summary-chart";
+  height: 100%;
+  grid-template-rows: min-content 1fr;
   gap: calc(var(--ring-unit) * 2);
-}
-
-#controls {
-  grid-area: controls;
-}
-
-#summary-chart {
-  grid-area: summary-chart;
-}
-
-#tile-chart {
-  grid-area: tile-chart;
 }
 
 text {
