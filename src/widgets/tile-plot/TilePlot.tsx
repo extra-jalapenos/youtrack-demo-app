@@ -1,16 +1,14 @@
 import {useRef, useEffect, useState, useMemo} from "react";
 import Button from "@jetbrains/ring-ui-built/components/button/button.js";
-import {createSummaryStats, type SummaryItem} from "./helper.ts";
+import {createSummaryStats} from "./helper.ts";
 import ButtonGroup from "@jetbrains/ring-ui-built/components/button-group/button-group";
-import ButtonToolbar from "@jetbrains/ring-ui-built/components/button-toolbar/button-toolbar";
 import {DataPointRaw} from "./types.ts";
 import {
     select,
     union,
     scaleBand, scaleLinear, scaleQuantize, scaleDiverging,
     utcMondays,
-    timeFormat, timeDays,
-    type Selection
+    timeFormat, timeDays
 } from "d3";
 import type {AlertType} from "@jetbrains/ring-ui-built/components/alert/alert";
 import {HostAPI} from "../../../@types/globals";
@@ -20,8 +18,6 @@ import Text from "@jetbrains/ring-ui-built/components/text/text";
 interface TilePlotOptions {
     from: Date;
     to: Date;
-    // width: number;
-    // height: number;
     host: HostAPI | null;
 }
 
@@ -29,10 +25,8 @@ interface TilePlotOptions {
 const TilePlot = ({from, to, host}: TilePlotOptions) => {
 
     const allDays = timeDays(from, to, 1);
-    const {locale} = YTApp;
 
     const formatDateYearISOWeek = timeFormat("%Y-%V")
-    const formatDateWeekday = timeFormat("%u")
 
     const allWeeks = union([from, ...utcMondays(from, to, 1), to].map(d => formatDateYearISOWeek(d)))
 
@@ -57,9 +51,9 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
     const canvasHeight: number = height - margin.top - margin.bottom;
     const squareSize = (canvasHeight / 7) / (1 + padding);
 
-    const canvasWidth: number = width - margin.left - margin.right;
+    const _canvasWidth: number = width - margin.left - margin.right;
     const neededWidth: number = (allWeeks.size * squareSize * (1 + padding)) + margin.left + margin.right;
-    const shownWeeksNumber: number = Math.floor(canvasWidth / squareSize);
+    // const shownWeeksNumber: number = Math.floor(canvasWidth / squareSize);
 
     // State: only raw data and UI selections
     const [fetchedData, setFetchedData] = useState<DataPointRaw[]>([])
@@ -120,7 +114,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
     );
 
     // Derived: summary statistics
-    const summary = useMemo(
+    const _summary = useMemo(
         () => createSummaryStats(dataContext, allDays, labelContribution, contributionCategories),
         [dataContext, allDays, labelContribution, contributionCategories]
     );
@@ -136,7 +130,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
         .padding(0.3);
 
     let xAxis
-    let yAxis
+    let _yAxis
 
 
     const firstRender = () => {
@@ -174,7 +168,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
                     .attr("opacity", 0)
                     .attr("fill", "grey")
                     .transition()
-                    .duration(d => Math.random() * 750 + 250)
+                    .duration(_ => Math.random() * 750 + 250)
                     .attr("opacity", (d: any) => opacityScale(d[1].minutesTotal))
                     .attr("fill", (d: any) => colorScaleDistribution(d[1].contribution))
                     .selection(),
