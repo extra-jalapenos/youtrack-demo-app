@@ -1,4 +1,5 @@
 import { InternMap, union, utcMondays, timeFormat } from "d3";
+import { TilePlotDataContext } from "./types";
 
 const DEFAULT_LOCALE = "en-US";
 
@@ -56,6 +57,25 @@ const _getISOWeek = (date: Date) => {
         week,
         label: `${String(week).padStart(2, "0")}`
     };
+};
+
+export const calculateAverageOtherContribution = (
+    minutesByPerson: Map<string, number>,
+    excludePerson: string
+): number => {
+    const otherPeople = Array.from(minutesByPerson.entries())
+        .filter(([person]) => person !== excludePerson)
+        .map(([, minutes]) => minutes);
+
+    if (otherPeople.length === 0) return 0;
+    return otherPeople.reduce((sum, minutes) => sum + minutes, 0) / otherPeople.length;
+};
+
+export const calculateContributionRatio = (
+    personMinutes: number,
+    otherAverageMinutes: number
+): number => {
+    return compareContributionToRest([personMinutes, otherAverageMinutes]);
 };
 
 export const compareContributionToRest = ([personalContribution = 0, otherContributions = 0]: [number, number]) => {
@@ -153,6 +173,50 @@ export interface SummaryItem {
     minutes: number;
     percentage: number;
 }
+
+export const createSummaryStats = (
+    dataContext: TilePlotDataContext,
+    allDays: Date[],
+    labelScale: (value: number) => string,
+    contributionCategories: string[]
+): SummaryItem[] => {
+    const formatDateYearISOWeek = timeFormat("%Y-%V");
+    const formatDateWeekday = timeFormat("%u");
+
+    const categoryCounts: Record<string, SummaryItem> = {};
+    contributionCategories.forEach(cat => {
+        categoryCounts[cat] = { category: cat, days: 0, minutes: 0, percentage: 0 };
+    });
+
+    allDays.forEach(date => {
+        const week = formatDateYearISOWeek(date);
+        const weekday = formatDateWeekday(date);
+
+        const weekData = dataContext.enrichedData.get(week);
+        if (!weekData) return;
+
+        const dayData = weekData.get(weekday);
+        if (!dayData) return;
+
+        if (dayData.minutesTotal <= 0) return;
+
+        const category = labelScale(dayData.contribution);
+
+        categoryCounts[category].days++;
+        categoryCounts[category].minutes += dayData.personMinutes;
+    });
+
+    const totalDays = allDays.length;
+    const results = contributionCategories.map(cat => {
+        const item = categoryCounts[cat];
+        return {
+            ...item,
+            percentage: totalDays > 0 ? Math.round((item.days / totalDays) * 100) : 0
+        };
+    });
+
+    return results;
+};
 
 export const aggregateDaysByCategory = (
     renderedData: InternMap<string, InternMap<string, any>>,

@@ -1,37 +1,35 @@
-import {useRef, useEffect, useState} from "react";
+import {useRef, useEffect, useState, useMemo} from "react";
 import Button from "@jetbrains/ring-ui-built/components/button/button.js";
-import {compareContributionToRest, createAllWeekdaysMap, aggregateDaysByCategory, type SummaryItem} from "./helper.ts";
+import {createSummaryStats, type SummaryItem} from "./helper.ts";
 import ButtonGroup from "@jetbrains/ring-ui-built/components/button-group/button-group";
 import ButtonToolbar from "@jetbrains/ring-ui-built/components/button-toolbar/button-toolbar";
-import {DataPointRaw, ProcessedDataPoint} from "./types.ts";
+import {DataPointRaw} from "./types.ts";
 import {
     select,
     union,
-    rollup, flatRollup,
-    sum, extent, max,
+    scaleBand, scaleLinear, scaleQuantize, scaleDiverging,
     utcMondays,
-    scaleBand, scaleTime, scaleLinear, scaleQuantize, scaleDiverging,
-    axisBottom, axisLeft,
-    timeFormat, timeDays, InternMap,
+    timeFormat, timeDays,
     type Selection
 } from "d3";
 import type {AlertType} from "@jetbrains/ring-ui-built/components/alert/alert";
 import {HostAPI} from "../../../@types/globals";
-import {processDataForRendering} from "./processingData.ts";
+import {processDataForRendering} from "./dataService.ts";
 import Text from "@jetbrains/ring-ui-built/components/text/text";
 
 interface TilePlotOptions {
     from: Date;
     to: Date;
-    width: number;
-    height: number;
+    // width: number;
+    // height: number;
     host: HostAPI | null;
 }
 
 
 const TilePlot = ({from, to, host}: TilePlotOptions) => {
+
     const allDays = timeDays(from, to, 1);
-    const locale = "de-DE"
+    const {locale} = YTApp;
 
     const formatDateYearISOWeek = timeFormat("%Y-%V")
     const formatDateWeekday = timeFormat("%u")
@@ -47,9 +45,9 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
     const [width, setWidth] = useState(0);
 
 
-    const svgTileGraphRef = useRef<SVGSVGElement>(null);
+    const svgTileGraphRef = useRef<SVGSVGElement | null>(null);
     useEffect(() => {
-        if (!svgTileGraphRef)
+        if (svgTileGraphRef.current === null)
             return
         setWidth(svgTileGraphRef.current.clientWidth);
         setHeight(svgTileGraphRef.current.clientHeight);
@@ -63,20 +61,18 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
     const neededWidth: number = (allWeeks.size * squareSize * (1 + padding)) + margin.left + margin.right;
     const shownWeeksNumber: number = Math.floor(canvasWidth / squareSize);
 
-    // store all sets
+    // State: only raw data and UI selections
     const [fetchedData, setFetchedData] = useState<DataPointRaw[]>([])
+    const [perspectivePerson, setPerspective] = useState<string>("")
+    const [allPeople, setAllPeople] = useState<Set<string>>(new Set(["Loading..."]))
 
-    const [allPeople, setAllPeople] = useState<Set<string>>(new Set(["Ally", "niemand"]))
-    const [me, setMe] = useState<{ key: string, login: string, name: string } | null>(null)
-
-    // get Worklogs if from / to changes
+    // Fetch worklogs
     useEffect(() => {
-        const getWorklogs = async (from: Date, to: Date) => {
+        const getWorklogs = async () => {
             if (host === null) {
                 console.log("host is null")
                 return
             }
-            setMe(YTApp.me)
             try {
                 const configYoutrackWorkitems = {
                     query: {
@@ -87,32 +83,24 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
                     }
                 }
                 const responseYoutrack: any = await host.fetchYouTrack(`workItems`, configYoutrackWorkitems)
-                const allPeopleArray = responseYoutrack.map((d: DataPointRaw) => d.author.login).sort()
-                setAllPeople(new Set(allPeopleArray));
-                setPerspective(allPeopleArray[0])
                 setFetchedData(responseYoutrack)
             } catch {
                 host.alert('YTApp: could not request custom HTTP endpoint', 'error' as AlertType.ERROR)
             }
         }
-        getWorklogs(from, to)
-    }, [from, to]);
+        getWorklogs()
+    }, [from, to, host]);
 
-    // filtering for e.g. ranges
-    const [filteredData, setFilteredData] = useState<DataPointRaw[]>([])
-
+    // Extract people and set default perspective
     useEffect(() => {
-        const filtered: DataPointRaw[] = fetchedData.filter(d => d)
-        setFilteredData(filtered)
+        const people = Array.from(new Set(fetchedData.map((d: DataPointRaw) => d.author.login))).sort()
+        setAllPeople(new Set(people));
+        if (people.length > 0 && !perspectivePerson) {
+            setPerspective(people[0])
+        }
     }, [fetchedData]);
 
-    const [perspectivePerson, setPerspective] = useState<string>(me ? me.name : "")
-
-    // process data
-    const [renderedData, setRenderedData] = useState<InternMap<string, InternMap>>(new InternMap())
-
-    const [summary, setSummary] = useState<SummaryItem[]>([])
-
+    // Contribution categories for visualization
     const contributionCategories = [
         "nothing",
         "very little",
@@ -123,25 +111,20 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
         "everything"
     ];
 
-
     const labelContribution = scaleQuantize([0, 1], contributionCategories);
 
-    const processing = () => {
+    // Derived: process data for rendering
+    const dataContext = useMemo(
+        () => processDataForRendering(fetchedData, perspectivePerson, from, to),
+        [fetchedData, perspectivePerson, from, to]
+    );
 
-        const processedData = processDataForRendering(filteredData)
+    // Derived: summary statistics
+    const summary = useMemo(
+        () => createSummaryStats(dataContext, allDays, labelContribution, contributionCategories),
+        [dataContext, allDays, labelContribution, contributionCategories]
+    );
 
-        const summaryData = aggregateDaysByCategory(
-            processedData,
-            labelContribution,
-            allDays,
-            perspectivePerson,
-            contributionCategories
-        );
-        setSummary(summaryData);
-        setRenderedData(processedData);
-    }
-
-    useEffect(() => console.log("hi"), [filteredData, perspectivePerson])
     let xScale = scaleBand()
         .domain(allWeeks)
         .range([0, neededWidth])
@@ -157,7 +140,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
 
 
     const firstRender = () => {
-        if (renderedData === null)
+        if (!dataContext || dataContext.enrichedData.size === 0)
             return
 
         const canvas = svgTileGraph.select("g.canvas");
@@ -175,7 +158,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
         // A group for each series, and a rect for each element in the series
         const seriesGroups = canvas
             .selectAll("g.columns")
-            .data(renderedData.keys())
+            .data(dataContext.enrichedData.keys())
             .join(
                 enter => enter.append("g"),
                 update => update.attr("class", "updated"),
@@ -186,7 +169,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
 
         // now we have the weeks
         seriesGroups.selectAll("rect")
-            .data((d: string): any => renderedData.get(d)) // rows
+            .data((d: string): any => dataContext.enrichedData.get(d)) // rows
             .join(enter => enter.append("rect")
                     .attr("opacity", 0)
                     .attr("fill", "grey")
@@ -263,10 +246,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
 
     }
 
-    useEffect(firstRender, []);
-    useEffect(() => {
-        console.log("rerendering")
-    }, [renderedData, perspectivePerson]);
+    useEffect(firstRender, [dataContext, allWeeks]);
     return (
         <>
             <div
@@ -305,7 +285,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
                         transform={`translate(${margin.left}, ${margin.top})`}
                     >
                     </g>
-                    <canvas
+                    <g
                         className="canvas"
                         transform={`translate(${margin.left}, ${margin.top})`}
                     >
@@ -322,7 +302,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
                             {width}
                         </Text>
 
-                    </canvas>
+                    </g>
                 </svg>
             </div>
 
