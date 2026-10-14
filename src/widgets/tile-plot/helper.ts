@@ -156,7 +156,7 @@ export const createAllWeekdaysMap = (
             weekdaysMap.set(weekdayStr, {
                 label: `${weekdayName}`,
                 minutesTotal: 0,
-                minutesByPersonAndDay: new Map(),
+                minutesByPersonMap: new Map(),
                 contribution: 0
             });
         }

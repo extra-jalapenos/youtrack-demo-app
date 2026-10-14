@@ -52,7 +52,8 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
     const squareSize = (canvasHeight / 7) / (1 + padding);
 
     const _canvasWidth: number = width - margin.left - margin.right;
-    const neededWidth: number = (allWeeks.size * squareSize * (1 + padding)) + margin.left + margin.right;
+    const neededWidth: number
+        = (allWeeks.size * squareSize * (1 + padding)) + margin.left + margin.right;
     // const shownWeeksNumber: number = Math.floor(canvasWidth / squareSize);
 
     // State: only raw data and UI selections
