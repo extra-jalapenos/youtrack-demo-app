@@ -17,6 +17,18 @@ const AppComponent = () => {
         to: new Date()
     })
 
+    useEffect(() => {
+        const registerApp = async () => {
+            try {
+                const host = await YTApp.register()
+                setHost(host)
+            } catch (e) {
+                console.error(e)
+            }
+        }
+        registerApp()
+    }, []);
+
     if (host === null)
         console.log("no host")
 

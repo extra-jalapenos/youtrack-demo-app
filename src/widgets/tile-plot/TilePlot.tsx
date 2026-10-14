@@ -35,14 +35,16 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
     };
 
     const padding = 0.3;
-    const [height, setHeight] = useState(0);
-    const [width, setWidth] = useState(0);
+    const [height, setHeight] = useState(document.documentElement.clientHeight);
+    const [width, setWidth] = useState(document.documentElement.clientWidth);
 
 
     const svgTileGraphRef = useRef<SVGSVGElement | null>(null);
     useEffect(() => {
         if (svgTileGraphRef.current === null)
             return
+        console.log("setting to width and height of svgTileGraphRef");
+        console.log(svgTileGraphRef.current.clientWidth);
         setWidth(svgTileGraphRef.current.clientWidth);
         setHeight(svgTileGraphRef.current.clientHeight);
     }, []);
@@ -186,7 +188,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
             .attr("class", (d: any) => labelContribution(d[1].contribution))
             .append("title")
             .text((d: any) => d[1].label)
-        //
+
         // if (summary.length === 0)
         //     return
         //
@@ -284,18 +286,7 @@ const TilePlot = ({from, to, host}: TilePlotOptions) => {
                         className="canvas"
                         transform={`translate(${margin.left}, ${margin.top})`}
                     >
-                        <rect
-                            x={-10}
-                            y={-20}
-                            width={30}
-                            height={40}
-                            fill="red"
-                        >
 
-                        </rect>
-                        <Text>
-                            {width}
-                        </Text>
 
                     </g>
                 </svg>
