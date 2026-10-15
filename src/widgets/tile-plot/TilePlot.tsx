@@ -12,11 +12,12 @@ import {
 } from "d3";
 import { getEmptyMap } from "./helper";
 
-const TileChart = ({ data, viewBoxWidth, viewBoxHeight }: TileChartConfig) => {
+const TileChart = ({ data, width = 200, height = 300 }: TileChartConfig) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const [from, setFrom] = useState(new Date(2025, 10, 3));
     const [to, setTo] = useState(new Date());
-
+    const viewBoxHeight = height > 0 ? height : 300;
+    const viewBoxWidth = width > 0 ? width : 200;
     const emptyMap = getEmptyMap(from, to)
 
     const margin = {
@@ -84,18 +85,18 @@ const TileChart = ({ data, viewBoxWidth, viewBoxHeight }: TileChartConfig) => {
                 update => update,
                 exit => exit.remove()
             )
-            .transition()
-            .duration((_: Date) => 250 + Math.random() * 750 )
-            .attr("fill", (_: Date) => changeOpacity(colorScale(Math.random()), Math.random()))
             .attr("rx", yScale.step() * 0.2)
             .attr("ry", yScale.step() * 0.2)
             .attr("x", (d: Date) => (canvasWidth - yScale.step()) - getWeekOffset(d) * yScale.step())
             .attr("y", (d: Date) => yScale(formatAsLocalWeekday(d))!)
             .attr("width", yScale.bandwidth())
             .attr("height", yScale.bandwidth())
+            .transition()
+            .duration((_: Date) => 250 + Math.random() * 750 )
+            .attr("fill", (_: Date) => changeOpacity(colorScale(Math.random()), Math.random()))
 
 
-    }, [svgRef.current, viewBoxWidth, viewBoxHeight]);
+    }, [viewBoxWidth, viewBoxHeight]);
 
     return(
         <>

@@ -10,31 +10,27 @@ import Heading from "@jetbrains/ring-ui-built/components/heading/heading";
 import Loader from "@jetbrains/ring-ui-built/components/loader/loader";
 
 const AppComponent = ({ host }: { host: HostAPI }) => {
-    console.log(host, "Host")
-    // eslint-disable-next-line
-    console.log(host.reportWidgetSize())
     const [loading, setLoading] = useState<boolean>(true);
     const [isConfiguring, setIsConfiguring] = useState(false);
     const [fetchedData, setFetchedData] = useState(null);
-    const svgContainerRef = useRef<HTMLElement|null>(null);
+    const [containerWidth, setContainerWidth] = useState(0);
+    const [containerHeight, setContainerHeight] = useState(0);
+    const containerRef = useRef<HTMLDivElement|null>(null);
 
-    const [size, setSize] = useState({
-        width: 100,
-        height: 100
-    });
+    useEffect(() => {
+        if (!containerRef.current) return;
 
-    const [config, _setConfig] = useState({
-        from: sub(new Date(), {months: 12}),
-        to: new Date()
-    });
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                setContainerWidth(entry.contentRect.width);
+                setContainerHeight(entry.contentRect.height);
+            }
+        });
 
-    if (loading)
-        return (
-            <Loader/>
-        )
+        resizeObserver.observe(containerRef.current);
+        return () => resizeObserver.disconnect();
+    }, []);
 
-
-    // widget rendering dimensions
     return (
         <>
             <section>
@@ -42,11 +38,12 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
             </section>
             <section
                 className="component"
+                ref={containerRef}
             >
                 <TilePlot
-                    viewBoxWidth={size.width}
-                    viewBoxHeight={size.height}
                     data={[]}
+                    width={containerWidth}
+                    height={containerHeight}
                 />
             </section>
         </>

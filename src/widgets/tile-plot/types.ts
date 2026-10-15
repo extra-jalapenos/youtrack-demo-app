@@ -17,7 +17,9 @@ export type TileChartDataPoint = {
 }
 
 export type TileChartConfig = {
-    viewBoxWidth: number,
-    viewBoxHeight: number,
-    data: TileChartDataPoint[]
+    viewBoxWidth?: number,
+    viewBoxHeight?: number,
+    data: TileChartDataPoint[],
+    width?: number,
+    height?: number
 }
