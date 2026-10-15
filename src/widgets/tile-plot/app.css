@@ -3,10 +3,17 @@ body {
   padding-bottom: var(--ring-unit);
   margin: 0;
   padding: 0;
-  height: 100vh;
 }
+
 #root {
-  height: 100%;
+  height: 100vh;
+  background-color: var(--ring-content-background-color);
+  font-family: var(--ring-font-family);
+  font-size: var(--ring-font-size);
+  color: var(--ring-text-color);
+  display: grid;
+  grid-template-rows: min-content;
+  grid-auto-rows: 1fr;
 }
 
 div.widget {

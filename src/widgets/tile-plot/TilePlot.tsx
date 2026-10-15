@@ -1,299 +1,111 @@
-import {useRef, useEffect, useState, useMemo} from "react";
-import Button from "@jetbrains/ring-ui-built/components/button/button.js";
-import {createSummaryStats} from "./helper.ts";
-import ButtonGroup from "@jetbrains/ring-ui-built/components/button-group/button-group";
-import {DataPointRaw} from "./types.ts";
+import {useEffect, useRef, useState} from "react";
+import type { TileChartConfig, TileChartDataPoint } from "./types"
 import {
     select,
-    union,
-    scaleBand, scaleLinear, scaleQuantize, scaleDiverging,
-    utcMondays,
-    timeFormat, timeDays
+    axisLeft,
+    timeMonday,
+    scaleBand,
+    timeDays,
+    timeDay,
+    color,
+    scaleDiverging
 } from "d3";
-import type {AlertType} from "@jetbrains/ring-ui-built/components/alert/alert";
-import {HostAPI} from "../../../@types/globals";
-import {processDataForRendering} from "./dataService.ts";
-import Text from "@jetbrains/ring-ui-built/components/text/text";
+import { getEmptyMap } from "./helper";
 
-interface TilePlotOptions {
-    from: Date;
-    to: Date;
-    host: HostAPI | null;
-}
+const TileChart = ({ data, viewBoxWidth, viewBoxHeight }: TileChartConfig) => {
+    const svgRef = useRef<SVGSVGElement>(null);
+    const [from, setFrom] = useState(new Date(2025, 10, 3));
+    const [to, setTo] = useState(new Date());
 
-
-const TilePlot = ({from, to, host}: TilePlotOptions) => {
-
-    const allDays = timeDays(from, to, 1);
-
-    const formatDateYearISOWeek = timeFormat("%Y-%V")
-
-    const allWeeks = union([from, ...utcMondays(from, to, 1), to].map(d => formatDateYearISOWeek(d)))
+    const emptyMap = getEmptyMap(from, to)
 
     const margin = {
-        left: 0, top: 5, right: 5, bottom: 25
-    };
+        left: 40,
+        right: 10,
+        bottom: 20,
+        top: 10,
+    }
 
-    const padding = 0.3;
-    const [height, setHeight] = useState(document.documentElement.clientHeight);
-    const [width, setWidth] = useState(document.documentElement.clientWidth);
+    let canvasWidth = viewBoxWidth - margin.left - margin.right;
+    let canvasHeight = viewBoxHeight - margin.top - margin.bottom;
+    const colorScale = scaleDiverging(["#ff1f6b", "#d15bff", "#0065ff"]);
 
+    const changeOpacity = (colorString: string, opacity: number): string => {
+       if (colorString.length === 0) {
+           return "transparent";
+       }
+        if (color(colorString) === null) {
+           return colorString
+       }
+       return color(colorString)!.copy({ opacity }).formatHex8()
+    }
 
-    const svgTileGraphRef = useRef<SVGSVGElement | null>(null);
-    useEffect(() => {
-        if (svgTileGraphRef.current === null)
-            return
-        console.log("setting to width and height of svgTileGraphRef");
-        console.log(svgTileGraphRef.current.clientWidth);
-        setWidth(svgTileGraphRef.current.clientWidth);
-        setHeight(svgTileGraphRef.current.clientHeight);
-    }, []);
-    const svgTileGraph = select(svgTileGraphRef.current);
-
-    const canvasHeight: number = height - margin.top - margin.bottom;
-    const squareSize = (canvasHeight / 7) / (1 + padding);
-
-    const _canvasWidth: number = width - margin.left - margin.right;
-    const neededWidth: number
-        = (allWeeks.size * squareSize * (1 + padding)) + margin.left + margin.right;
-    // const shownWeeksNumber: number = Math.floor(canvasWidth / squareSize);
-
-    // State: only raw data and UI selections
-    const [fetchedData, setFetchedData] = useState<DataPointRaw[]>([])
-    const [perspectivePerson, setPerspective] = useState<string>("")
-    const [allPeople, setAllPeople] = useState<Set<string>>(new Set(["Loading..."]))
-
-    // Fetch worklogs
-    useEffect(() => {
-        const getWorklogs = async () => {
-            if (host === null) {
-                console.log("host is null")
-                return
-            }
-            try {
-                const configYoutrackWorkitems = {
-                    query: {
-                        query: "Subtask of: TODO-380",
-                        from: from.toISOString().slice(0, 10),
-                        to: to.toISOString().slice(0, 10),
-                        fields: "id,author(name,login),duration(minutes),date,text,issue(id,customFields(id,name,value(id,name)))"
-                    }
-                }
-                const responseYoutrack: any = await host.fetchYouTrack(`workItems`, configYoutrackWorkitems)
-                setFetchedData(responseYoutrack)
-            } catch {
-                host.alert('YTApp: could not request custom HTTP endpoint', 'error' as AlertType.ERROR)
-            }
-        }
-        getWorklogs()
-    }, [from, to, host]);
-
-    // Extract people and set default perspective
-    useEffect(() => {
-        const people = Array.from(new Set(fetchedData.map((d: DataPointRaw) => d.author.login))).sort()
-        setAllPeople(new Set(people));
-        if (people.length > 0 && !perspectivePerson) {
-            setPerspective(people[0])
-        }
-    }, [fetchedData]);
-
-    // Contribution categories for visualization
-    const contributionCategories = [
-        "nothing",
-        "very little",
-        "less",
-        "equally",
-        "more",
-        "most",
-        "everything"
-    ];
-
-    const labelContribution = scaleQuantize([0, 1], contributionCategories);
-
-    // Derived: process data for rendering
-    const dataContext = useMemo(
-        () => processDataForRendering(fetchedData, perspectivePerson, from, to),
-        [fetchedData, perspectivePerson, from, to]
-    );
-
-    // Derived: summary statistics
-    const _summary = useMemo(
-        () => createSummaryStats(dataContext, allDays, labelContribution, contributionCategories),
-        [dataContext, allDays, labelContribution, contributionCategories]
-    );
-
-    let xScale = scaleBand()
-        .domain(allWeeks)
-        .range([0, neededWidth])
-        .padding(0.3);
-
+    const lastMonday = timeMonday(new Date())
+    const formatAsLocalWeekday = (d: Date) => d.toLocaleDateString([], { weekday: "short" })
+    const weekdays = timeDays(lastMonday, timeDay.offset(lastMonday, 7)).map(d => formatAsLocalWeekday(d))
     let yScale = scaleBand()
-        .domain(["1", "2", "3", "4", "5", "6", "7"])
+        .domain(weekdays)
         .range([0, canvasHeight])
-        .padding(0.3);
+        .padding(0.2);
 
-    let xAxis
-    let _yAxis
+    // now we know how high one rect is and therefore how wide
+    const getWeekOffset = (date: Date) => timeMonday.count(timeMonday(date), to)
 
 
-    const firstRender = () => {
-        if (!dataContext || dataContext.enrichedData.size === 0)
-            return
+    useEffect(() => {
+        if (!svgRef.current) return;
+        const svg = select(svgRef.current);
+        svg.selectChildren().remove();
 
-        const canvas = svgTileGraph.select("g.canvas");
-        const axes = svgTileGraph.select("g.axes");
-        const opacityScale = scaleLinear().domain([0, 60]).range([0, 1])
-        opacityScale.clamp(true);
+        const axes = svg.append("g")
+            .attr("class", "axes")
+            .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-        xAxis = axes
-            .append("g")
-            .attr("class", "x")
-            .attr("transform", `translate(0, ${canvasHeight})`)
+        // axes.append("g")
+        // 	.attr("class", "x axis")
+        // 	.attr("transform", `translate(0, ${canvasHeight})`)
+        // 	.call(axisBottom(xScale).ticks(4));
 
-        const colorScaleDistribution = scaleDiverging(["#ff1f6b", "#d15bff", "#0065ff"]);
+        axes.append("g")
+            .attr("class", "y axis")
+            .attr("transform", `translate(${0}, 0)`)
+            .call(axisLeft(yScale));
 
-        // A group for each series, and a rect for each element in the series
-        const seriesGroups = canvas
-            .selectAll("g.columns")
-            .data(dataContext.enrichedData.keys())
+        const canvas = svg.append("svg")
+            .attr("class", "canvas")
+            .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+        const weekColumns = canvas.selectAll("rect")
+            .data(emptyMap)
             .join(
-                enter => enter.append("g"),
-                update => update.attr("class", "updated"),
-                exit => exit.remove()
-            )
-            .attr("id", d => d)
-            .attr("transform", d => `translate(${xScale(d)}, 0)`)
-
-        // now we have the weeks
-        seriesGroups.selectAll("rect")
-            .data((d: string): any => dataContext.enrichedData.get(d)) // rows
-            .join(enter => enter.append("rect")
-                    .attr("opacity", 0)
-                    .attr("fill", "grey")
-                    .transition()
-                    .duration(_ => Math.random() * 750 + 250)
-                    .attr("opacity", (d: any) => opacityScale(d[1].minutesTotal))
-                    .attr("fill", (d: any) => colorScaleDistribution(d[1].contribution))
-                    .selection(),
+                enter => enter
+                    .append("rect")
+                    .attr("fill", "transparent"),
                 update => update,
                 exit => exit.remove()
             )
-            .attr("transform", (d: any) => `translate(0, ${yScale(d[0])})`)
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("rx", squareSize / 5)
-            .attr("ry", squareSize / 5)
-            .attr("width", squareSize)
-            .attr("height", squareSize)
-            .attr("class", (d: any) => labelContribution(d[1].contribution))
-            .append("title")
-            .text((d: any) => d[1].label)
+            .transition()
+            .duration((_: Date) => 250 + Math.random() * 750 )
+            .attr("fill", (_: Date) => changeOpacity(colorScale(Math.random()), Math.random()))
+            .attr("rx", yScale.step() * 0.2)
+            .attr("ry", yScale.step() * 0.2)
+            .attr("x", (d: Date) => (canvasWidth - yScale.step()) - getWeekOffset(d) * yScale.step())
+            .attr("y", (d: Date) => yScale(formatAsLocalWeekday(d))!)
+            .attr("width", yScale.bandwidth())
+            .attr("height", yScale.bandwidth())
 
-        // if (summary.length === 0)
-        //     return
-        //
-        // const xScaleSummary = scaleBand()
-        //     .domain(contributionCategories)
-        //     .range([0, canvasWidth])
-        //     .padding(0.3);
-        //
-        // const maxOfDays: number = Number(max(summary, d => d.days || 0))
-        // if (maxOfDays === 0)
-        //     return;
-        //
-        // const yScaleSummary = scaleLinear()
-        //     .domain([0, maxOfDays])
-        //     .range([canvasHeight, 0]);
-        //
-        // const xAxis = svgSummary.select("g.axes")
-        //     .append("g")
-        //     .attr("class", "x axis")
-        //     .attr("transform", `translate(0, ${canvasHeight})`)
-        //     .call(axisBottom(xScaleSummary))
-        //
-        // const yAxis = svgSummary.select("g.axes")
-        //     .append("g")
-        //     .attr("class", "y axis")
-        //     .call(axisLeft(yScaleSummary));
-        //
-        // const bars = svgSummary.select("g.canvas")
-        //     .selectAll("rect")
-        //     .data(summary)
-        //     .join(
-        //         enter => enter.append("rect")
-        //             .attr("y", yScaleSummary(0))
-        //             .attr("height", 0)
-        //             .transition()
-        //             .duration(750)
-        //             .attr("y", (d) => yScaleSummary(d.days))
-        //             .attr("height", (d) => yScaleSummary(0) - yScaleSummary(d.days))
-        //             .selection(),
-        //         update => update
-        //             .transition()
-        //             .duration(750)
-        //             .attr("y", (d) => yScaleSummary(d.days))
-        //             .attr("height", (d) => yScaleSummary(0) - yScaleSummary(d.days)),
-        //         exit => exit.remove()
-        //     )
-        //     .attr("x", (d) => xScaleSummary(d.category)!)
-        //     .attr("width", xScaleSummary.bandwidth())
-        //     .attr("fill", (d: any) => colorScaleDistribution(labelContribution.invertExtent(d.category)[0]))
-        //     .append("title")
-        //     .text((d: any) => `${d.days} days`)
 
-    }
+    }, [svgRef.current, viewBoxWidth, viewBoxHeight]);
 
-    useEffect(firstRender, [dataContext, allWeeks]);
-    return (
+    return(
         <>
-            <div
-                id="controls"
-                className="component"
+            <svg
+                ref={svgRef}
+                viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
             >
-                <ButtonGroup>
-                    {Array.from(allPeople)
-                        .map((person: string) => {
-                            return (
-                                <Button
-                                    onClick={() => setPerspective(person)}
-                                    key={person}
-                                    active={perspectivePerson === person}
-                                >
-                                    {person}
-                                </Button>
-                            )
-                        })
-                    }
-                </ButtonGroup>
-            </div>
-
-            <div
-                className="component"
-            >
-                <svg
-                    ref={svgTileGraphRef}
-                    viewBox={`0 0 ${width} ${height}`}
-                    width={width}
-                    height={height}
-                >
-
-                    <g
-                        className="axes"
-                        transform={`translate(${margin.left}, ${margin.top})`}
-                    >
-                    </g>
-                    <g
-                        className="canvas"
-                        transform={`translate(${margin.left}, ${margin.top})`}
-                    >
-
-
-                    </g>
-                </svg>
-            </div>
-
+            </svg>
         </>
     )
 }
 
-export default TilePlot;
+export default TileChart

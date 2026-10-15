@@ -1,50 +1,55 @@
-import React, {memo, useEffect, useState } from 'react';
+import React, {memo, useEffect, useRef, useState} from 'react';
 import * as d3 from "d3";
 import "./app.css"
-import type { HostAPI } from "../../../@types/globals";
-import { sub } from "date-fns"
+import type {HostAPI} from "../../../@types/globals";
+import "@jetbrains/ring-ui-built/components/style.css";
+import {sub} from "date-fns"
 import TilePlot from "./TilePlot.tsx";
 import {ControlsHeight, ControlsHeightContext} from '@jetbrains/ring-ui-built/components/global/controls-height';
+import Heading from "@jetbrains/ring-ui-built/components/heading/heading";
+import Loader from "@jetbrains/ring-ui-built/components/loader/loader";
 
-// Register widget in YouTrack. To learn more, see https://www.jetbrains.com/help/youtrack/devportal-apps/apps-host-api.html
+const AppComponent = ({ host }: { host: HostAPI }) => {
+    console.log(host, "Host")
+    // eslint-disable-next-line
+    console.log(host.reportWidgetSize())
+    const [loading, setLoading] = useState<boolean>(true);
+    const [isConfiguring, setIsConfiguring] = useState(false);
+    const [fetchedData, setFetchedData] = useState(null);
+    const svgContainerRef = useRef<HTMLElement|null>(null);
 
-const AppComponent = () => {
+    const [size, setSize] = useState({
+        width: 100,
+        height: 100
+    });
 
-    const [host, setHost] = useState<HostAPI | null>(null);
-    // const [isConfiguring, setIsConfiguring] = useState(false);
     const [config, _setConfig] = useState({
-        from: sub(new Date(), { months: 6 }),
+        from: sub(new Date(), {months: 12}),
         to: new Date()
-    })
+    });
 
-    useEffect(() => {
-        const registerApp = async () => {
-            try {
-                const host = await YTApp.register()
-                setHost(host)
-            } catch (e) {
-                console.error(e)
-            }
-        }
-        registerApp()
-    }, []);
+    if (loading)
+        return (
+            <Loader/>
+        )
 
-    if (host === null)
-        console.log("no host")
 
     // widget rendering dimensions
     return (
-        <div className="widget">
-            <ControlsHeightContext.Provider value={ControlsHeight.S}>
-            {
+        <>
+            <section>
+                <Heading>Lol hi</Heading>
+            </section>
+            <section
+                className="component"
+            >
                 <TilePlot
-                    host={host}
-                    from={config.from}
-                    to={config.to}
+                    viewBoxWidth={size.width}
+                    viewBoxHeight={size.height}
+                    data={[]}
                 />
-            }
-            </ControlsHeightContext.Provider>
-        </div>
+            </section>
+        </>
     )
 };
 
