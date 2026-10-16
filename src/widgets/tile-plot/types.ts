@@ -10,6 +10,12 @@ export type DataPointRaw = {
     date: number;
 }
 
+export type ExtractedDataPoint = {
+    minutes: number;
+    author: string;
+    date: Date;
+}
+
 export type TileChartDataPoint = {
     date: Date,
     author: string,
