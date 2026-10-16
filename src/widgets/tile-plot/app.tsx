@@ -10,12 +10,15 @@ import Heading from "@jetbrains/ring-ui-built/components/heading/heading";
 import Loader from "@jetbrains/ring-ui-built/components/loader/loader";
 import type {AlertType} from "@jetbrains/ring-ui-built/components/alert/alert";
 import {extractAllPeople} from "./dataService.ts";
+import {extractRelevantInfo} from "./processingData.ts";
+import ButtonGroup from "@jetbrains/ring-ui-built/components/button-group/button-group";
+import Button from "@jetbrains/ring-ui-built/components/button/button";
 
 const AppComponent = ({ host }: { host: HostAPI }) => {
     const [loading, setLoading] = useState<boolean>(true);
     const [isConfiguring, setIsConfiguring] = useState(false);
     const [fetchedData, setFetchedData] = useState(null);
-    const [authors, setAuthors] = useState(new Set<string>());
+    const [authors, setAuthors] = useState<string[]>([]);
     const [from, setFrom] = useState(sub(new Date(), { years: 1 }));
     const [to, setTo] = useState(new Date());
     const [containerWidth, setContainerWidth] = useState(0);
@@ -37,7 +40,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
     }, []);
 
     useEffect(() => {
-        const fetchWorkItems = async (from, to) => {
+        const fetchWorkItems = async () => {
             try {
                 const configYoutrackWorkitems = {
                     query: {
@@ -47,17 +50,34 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
                 }
                 const responseYoutrack: any = await host.fetchYouTrack(`workItems`, configYoutrackWorkitems)
                 console.log("responseYoutrack", responseYoutrack[0])
-                setFetchedData(responseYoutrack)
-                extractAllPeople(responseYoutrack)
+
+                const relevantData = extractRelevantInfo(responseYoutrack);
+                const authors = extractAllPeople(responseYoutrack);
+
+
             } catch {
                 host.alert('YTApp: could not request custom HTTP endpoint', 'error' as AlertType.ERROR)
             }
         }
-        fetchWorkItems(from, to)
+        fetchWorkItems()
     }, [from, to]);
 
     return (
         <>
+            <section>
+                <ButtonGroup>
+                    {authors.map(author => {
+                        return (
+                            <Button
+                                key={author}
+                                active={author === authors[0]}
+                            >
+                                {author}
+                            </Button>
+                        )
+                    })}
+                </ButtonGroup>
+            </section>
             <section
                 className="component"
                 ref={containerRef}
