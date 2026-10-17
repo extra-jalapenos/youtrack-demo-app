@@ -11,7 +11,7 @@
     "test": "echo 'no tests'",
     "pack": "rm -rf tile-plot-widget.zip && cd dist && zip -r ../tile-plot-widget.zip .",
     "load_env_vars": "set -a && source .env && set +a",
-    "upload": "youtrack-app upload dist --host $YOUTRACK_HOST --token $YOUTRACK_API_TOKEN"
+    "upload": "source .env && youtrack-app upload dist --host $YOUTRACK_HOST --token $YOUTRACK_API_TOKEN"
   },
   "dependencies": {
     "@jetbrains/ring-ui-built": "^7.0.129",

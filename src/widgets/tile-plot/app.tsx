@@ -10,20 +10,62 @@ import Heading from "@jetbrains/ring-ui-built/components/heading/heading";
 import Loader from "@jetbrains/ring-ui-built/components/loader/loader";
 import type {AlertType} from "@jetbrains/ring-ui-built/components/alert/alert";
 import {extractAllPeople} from "./dataService.ts";
-import {extractRelevantInfo} from "./processingData.ts";
+import {
+    calculateMinutesByDay,
+    calculateMinutesByDayAndPersonId,
+    evaluateFromPOV,
+    extractRelevantInfo
+} from "./processingData.ts";
 import ButtonGroup from "@jetbrains/ring-ui-built/components/button-group/button-group";
 import Button from "@jetbrains/ring-ui-built/components/button/button";
+import {author, ExtractedDataPoint, TileChartDataPoint} from "./types.ts";
+import {getEmptyMap} from "./helper.ts";
 
 const AppComponent = ({ host }: { host: HostAPI }) => {
     const [loading, setLoading] = useState<boolean>(true);
     const [isConfiguring, setIsConfiguring] = useState(false);
-    const [fetchedData, setFetchedData] = useState(null);
-    const [authors, setAuthors] = useState<string[]>([]);
+    const [fetchedData, setFetchedData] = useState<ExtractedDataPoint[]>([]);
+    const [authors, setAuthors] = useState<author[]>([]);
+    const [selectedPerson, setSelectedPerson] = useState<string>("");
     const [from, setFrom] = useState(sub(new Date(), { years: 1 }));
     const [to, setTo] = useState(new Date());
     const [containerWidth, setContainerWidth] = useState(0);
     const [containerHeight, setContainerHeight] = useState(0);
     const containerRef = useRef<HTMLDivElement|null>(null);
+    const [renderedData, setRenderedData] = useState<TileChartDataPoint[]>([])
+
+    useEffect(() => {
+        const fetchWorkItems = async () => {
+            try {
+                const query = "Subtask of: TODO-380"
+                const fields = "id,author(id,name,login),duration(minutes),date,text,issue(id,customFields(id,name,value(id,name)))"
+                const startDate = from.toISOString().split("T")[0];
+                const endDate = to.toISOString().split("T")[0];
+                const responseYoutrack: any = await host.fetchYouTrack(`workItems?startDate=${startDate}&endDate=${endDate}&fields=${fields}&query=${query}`);
+                console.log("responseYoutrack", responseYoutrack[0])
+
+                const relevantData = extractRelevantInfo(responseYoutrack);
+                const authors = extractAllPeople(responseYoutrack);
+
+                setAuthors(authors);
+                if (authors.length)
+                    setSelectedPerson(authors[0].id);
+
+                setFetchedData(relevantData);
+            } catch {
+                host.alert('YTApp: could not request custom HTTP endpoint', 'error' as AlertType.ERROR)
+            }
+        }
+        fetchWorkItems()
+    }, [from, to]);
+
+    useEffect(() => {
+        if (fetchedData.length === 0)
+            return
+        const povData = evaluateFromPOV(selectedPerson, fetchedData, from, to);
+        setRenderedData([...povData]);
+        console.log("set pov data", povData);
+    }, [selectedPerson, fetchedData, from, to]);
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -39,29 +81,6 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
         return () => resizeObserver.disconnect();
     }, []);
 
-    useEffect(() => {
-        const fetchWorkItems = async () => {
-            try {
-                const configYoutrackWorkitems = {
-                    query: {
-                        query: "work date: 2026-10-14 .. Today",
-                        fields: "id,author(name,login),duration(minutes),date,text,issue(id,customFields(id,name,value(id,name)))"
-                    }
-                }
-                const responseYoutrack: any = await host.fetchYouTrack(`workItems`, configYoutrackWorkitems)
-                console.log("responseYoutrack", responseYoutrack[0])
-
-                const relevantData = extractRelevantInfo(responseYoutrack);
-                const authors = extractAllPeople(responseYoutrack);
-
-
-            } catch {
-                host.alert('YTApp: could not request custom HTTP endpoint', 'error' as AlertType.ERROR)
-            }
-        }
-        fetchWorkItems()
-    }, [from, to]);
-
     return (
         <>
             <section>
@@ -69,10 +88,11 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
                     {authors.map(author => {
                         return (
                             <Button
-                                key={author}
-                                active={author === authors[0]}
+                                key={author.id}
+                                active={author.id === selectedPerson}
+                                onClick={() => setSelectedPerson(author.id)}
                             >
-                                {author}
+                                {author.name}
                             </Button>
                         )
                     })}
@@ -83,7 +103,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
                 ref={containerRef}
             >
                 <TilePlot
-                    data={[]}
+                    data={renderedData}
                     width={containerWidth}
                     height={containerHeight}
                 />

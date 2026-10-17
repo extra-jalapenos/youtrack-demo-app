@@ -4,15 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Quick Commands
 
-### Development
-- `npm run dev` — Start Vite dev server with React hot reload
-- `npm run build` — Compile TypeScript, bundle with Vite, and validate with YouTrack tools
-- `npm run lint` — Run ESLint with strict rules (max 120 char lines, TypeScript strict mode, React best practices)
-- `npm run pack` — Create `tile-plot-widget.zip` from dist folder
-- `npm run upload` — Deploy to YouTrack instance (requires `.env` with `YOUTRACK_HOST` and `YOUTRACK_API_TOKEN`)
-
 ### Environment
-- Copy `.env.example` to `.env` and set `YOUTRACK_HOST` and `YOUTRACK_API_TOKEN` for deployment
 - Node version is specified in `.nvmrc` (use `nvm use` or equivalent)
 
 ## Architecture Overview

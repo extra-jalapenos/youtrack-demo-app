@@ -29,8 +29,13 @@ text {
   font-size: var(--ring-font-size);
 }
 
-g.axes > text {
+g.axes  text {
   font-size: var(--ring-font-size-smaller);
+}
+
+svg.canvas rect[data-total-minutes="0"] {
+  fill: currentColor;
+  opacity: 0.05;
 }
 
 line {
@@ -57,7 +62,7 @@ svg {
 }
 
 /* Wide: e.g. 1000 × 400–500 (aspect ratio 2:1 to 2.5:1) */
-@media (max-aspect-ratio: 5/2) {
+@media (max-aspect-ratio: 5/2) and (min-width: 400px) {
   #root {
     grid-template-rows: min-content repeat(2, 1fr);
   }

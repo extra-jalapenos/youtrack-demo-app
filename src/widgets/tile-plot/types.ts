@@ -1,25 +1,29 @@
+export type author = {
+    id: string;
+    login: string;
+    name: string;
+}
+
 export type DataPointRaw = {
     duration: {
         minutes: number
     };
     category?: string;
-    author: {
-        login: string;
-        name: string;
-    };
+    author: author;
     date: number;
 }
 
 export type ExtractedDataPoint = {
     minutes: number;
-    author: string;
+    authorId: string;
     date: Date;
 }
 
 export type TileChartDataPoint = {
     date: Date,
-    author: string,
-    minutes: number
+    minutes: number,
+    totalMinutes: number,
+    contribution: number
 }
 
 export type TileChartConfig = {

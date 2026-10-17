@@ -8,20 +8,19 @@ import {
     timeDays,
     timeDay,
     color,
-    scaleDiverging
+    scaleDiverging, scaleLinear
 } from "d3";
-import { getEmptyMap } from "./helper";
+import Loader from "@jetbrains/ring-ui-built/components/loader/loader";
+import {describeDataPoint} from "./helper.ts";
 
 const TileChart = ({ data, width = 200, height = 300 }: TileChartConfig) => {
     const svgRef = useRef<SVGSVGElement>(null);
-    const [from, setFrom] = useState(new Date(2025, 10, 3));
     const [to, setTo] = useState(new Date());
     const viewBoxHeight = height > 0 ? height : 300;
     const viewBoxWidth = width > 0 ? width : 200;
-    const emptyMap = getEmptyMap(from, to)
 
     const margin = {
-        left: 40,
+        left: 25,
         right: 10,
         bottom: 20,
         top: 10,
@@ -30,6 +29,9 @@ const TileChart = ({ data, width = 200, height = 300 }: TileChartConfig) => {
     let canvasWidth = viewBoxWidth - margin.left - margin.right;
     let canvasHeight = viewBoxHeight - margin.top - margin.bottom;
     const colorScale = scaleDiverging(["#ff1f6b", "#d15bff", "#0065ff"]);
+
+    // a full hour is fully opaque
+    const intensityScale = scaleLinear().domain([0, 60]).range([0, 1]);
 
     const changeOpacity = (colorString: string, opacity: number): string => {
        if (colorString.length === 0) {
@@ -52,51 +54,62 @@ const TileChart = ({ data, width = 200, height = 300 }: TileChartConfig) => {
     // now we know how high one rect is and therefore how wide
     const getWeekOffset = (date: Date) => timeMonday.count(timeMonday(date), to)
 
-
     useEffect(() => {
         if (!svgRef.current) return;
         const svg = select(svgRef.current);
-        svg.selectChildren().remove();
 
-        const axes = svg.append("g")
-            .attr("class", "axes")
-            .attr("transform", `translate(${margin.left}, ${margin.top})`);
+        if (svg.select(".axes").empty()) {
+            const axes = svg.append("g")
+                .attr("class", "axes")
+                .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-        // axes.append("g")
-        // 	.attr("class", "x axis")
-        // 	.attr("transform", `translate(0, ${canvasHeight})`)
-        // 	.call(axisBottom(xScale).ticks(4));
+            axes.append("g")
+                .attr("class", "y axis")
+                .attr("transform", `translate(${0}, 0)`)
+                .call(axisLeft(yScale));
+        }
 
-        axes.append("g")
-            .attr("class", "y axis")
-            .attr("transform", `translate(${0}, 0)`)
-            .call(axisLeft(yScale));
+        if (svg.select(".canvas").empty()) {
+            svg.append("svg")
+                .attr("class", "canvas")
+                .attr("transform", `translate(${margin.left}, ${margin.top})`);
+        }
 
-        const canvas = svg.append("svg")
-            .attr("class", "canvas")
-            .attr("transform", `translate(${margin.left}, ${margin.top})`);
-
-        const weekColumns = canvas.selectAll("rect")
-            .data(emptyMap)
+        const canvas = svg.select(".canvas");
+        const rects = canvas.selectAll("rect")
+            .data(data)
             .join(
                 enter => enter
                     .append("rect")
-                    .attr("fill", "transparent"),
-                update => update,
+                    .attr("fill", "transparent")
+                    .transition()
+                    .duration((_: TileChartDataPoint) => 250 + Math.random() * 750)
+                    .attr("fill", (d: TileChartDataPoint) => changeOpacity(colorScale(d.contribution), intensityScale(d.totalMinutes)))
+                    .attr("data-total-minutes", (d: TileChartDataPoint) => d.totalMinutes)
+                    .attr("data-contribution", (d: TileChartDataPoint) => d.contribution)
+                    .attr("data-minutes", (d: TileChartDataPoint) => d.minutes)
+                    .selection(),
+                update => update
+                    .transition()
+                    .duration(500)
+                    .attr("fill", (d: TileChartDataPoint) => changeOpacity(colorScale(d.contribution), intensityScale(d.totalMinutes)))
+                    .attr("data-total-minutes", (d: TileChartDataPoint) => d.totalMinutes)
+                    .attr("data-contribution", (d: TileChartDataPoint) => d.contribution)
+                    .attr("data-minutes", (d: TileChartDataPoint) => d.minutes)
+                    .selection(),
                 exit => exit.remove()
             )
             .attr("rx", yScale.step() * 0.2)
             .attr("ry", yScale.step() * 0.2)
-            .attr("x", (d: Date) => (canvasWidth - yScale.step()) - getWeekOffset(d) * yScale.step())
-            .attr("y", (d: Date) => yScale(formatAsLocalWeekday(d))!)
+            .attr("x", (d: TileChartDataPoint) => (canvasWidth - yScale.step()) - getWeekOffset(d.date) * yScale.step())
+            .attr("y", (d: TileChartDataPoint) => yScale(formatAsLocalWeekday(d.date))!)
             .attr("width", yScale.bandwidth())
-            .attr("height", yScale.bandwidth())
-            .transition()
-            .duration((_: Date) => 250 + Math.random() * 750 )
-            .attr("fill", (_: Date) => changeOpacity(colorScale(Math.random()), Math.random()))
+            .attr("height", yScale.bandwidth());
+    }, [data]);
 
-
-    }, [viewBoxWidth, viewBoxHeight]);
+    if (data.length === 0) {
+        return <Loader />
+    }
 
     return(
         <>
