@@ -22,11 +22,12 @@ import {author, CountChartDataPoint, ExtractedDataPoint, TileChartDataPoint} fro
 import {getEmptyMap} from "./helper.ts";
 import CountChart from "./CountChart.tsx";
 import DatePicker from "@jetbrains/ring-ui-built/components/date-picker/date-picker";
+import ButtonToolbar from "@jetbrains/ring-ui-built/components/button-toolbar/button-toolbar";
 
 const AppComponent = ({ host }: { host: HostAPI }) => {
     const [loading, setLoading] = useState<boolean>(true);
     const [isConfiguring, setIsConfiguring] = useState(false);
-    const [aggregation, setAggregation] = useState<string>("count");
+    const [aggregation, setAggregation] = useState<string>("median");
     const [fetchedData, setFetchedData] = useState<ExtractedDataPoint[]>([]);
     const [authors, setAuthors] = useState<author[]>([]);
     const [selectedPerson, setSelectedPerson] = useState<string>("");
@@ -116,32 +117,34 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
     return (
         <>
             <section>
-                <ButtonGroup>
-                    {authors.map(author => {
-                        return (
-                            <Button
-                                key={author.id}
-                                active={author.id === selectedPerson}
-                                onClick={() => setSelectedPerson(author.id)}
-                            >
-                                {author.name}
-                            </Button>
-                        )
-                    })}
-                </ButtonGroup>
-                <ButtonGroup>
-                    {["count", "median"].map(mode => {
-                        return (
-                            <Button
-                                key={mode}
-                                active={mode === aggregation}
-                                onClick={() => setAggregation(mode)}
-                            >
-                                {mode}
-                            </Button>
-                        )
-                    })}
-                </ButtonGroup>
+                <ButtonToolbar>
+                    <ButtonGroup>
+                        {authors.map(author => {
+                            return (
+                                <Button
+                                    key={author.id}
+                                    active={author.id === selectedPerson}
+                                    onClick={() => setSelectedPerson(author.id)}
+                                >
+                                    {author.name}
+                                </Button>
+                            )
+                        })}
+                    </ButtonGroup>
+                    <ButtonGroup>
+                        {["count", "median"].map(mode => {
+                            return (
+                                <Button
+                                    key={mode}
+                                    active={mode === aggregation}
+                                    onClick={() => setAggregation(mode)}
+                                >
+                                    {mode}
+                                </Button>
+                            )
+                        })}
+                    </ButtonGroup>
+                </ButtonToolbar>
             </section>
             <section
                 className="component"

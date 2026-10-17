@@ -34,31 +34,30 @@ const CountChart = ({ data, width, height }: CountChartConfig) => {
         if (!svgRef.current) return;
         const svg = select(svgRef.current);
 
-        if (svg.select(".axes").empty()) {
+        const axes = svg.select(".axes")
+        // first render
+        if (axes.empty()) {
             const axes = svg.append("g")
                 .attr("class", "axes")
                 .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
             axes.append("g")
                 .attr("class", "grid")
-                .selectAll("line")
-                .data(yScale.ticks(5))
-                .join("line")
-                .attr("x1", 0)
-                .attr("x2", canvasWidth)
-                .attr("y1", (d: number) => yScale(d))
-                .attr("y2", (d: number) => yScale(d));
 
             axes.append("g")
                 .attr("class", "y axis")
                 .attr("transform", `translate(${0}, 0)`)
-                .call(axisLeft(yScale).ticks(5));
 
             axes.append("g")
                 .attr("class", "x axis")
-                .attr("transform", `translate(${0}, ${canvasHeight})`)
-                .call(axisBottom(xScale));
+                .attr("transform", `translate(${0}, ${canvasHeight})`);
         }
+
+        // Always update the y-axis with current scale
+
+        // Always update the y-axis with current scale
+        axes.select<SVGGElement>("g.x.axis").call(axisBottom(xScale));
+        axes.select<SVGGElement>("g.y.axis").call(axisLeft(yScale).ticks(5));
 
         if (svg.select(".canvas").empty()) {
             svg.append("svg")
@@ -68,6 +67,28 @@ const CountChart = ({ data, width, height }: CountChartConfig) => {
         }
 
         const canvas = svg.select(".canvas");
+
+        axes.select<SVGGElement>("g.grid")
+            .selectAll("line")
+            .data(yScale.ticks(5))
+            .join(
+                enter => enter.append("line")
+                    .attr("x1", 0)
+                    .attr("y1", (d: number) => yScale(d))
+                    .attr("y2", (d: number) => yScale(d))
+                    .attr("x2", 0)
+                    .transition()
+                    .duration(1000)
+                    .attr("x2", canvasWidth)
+                    .selection(),
+                update => update
+                    .transition()
+                    .duration(250)
+                    .attr("y1", (d: number) => yScale(d))
+                    .attr("y2", (d: number) => yScale(d)),
+                exit => exit.remove()
+            )
+
         const rects = canvas.selectAll("rect")
             .data(data)
             .join(
