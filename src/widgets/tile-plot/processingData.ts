@@ -1,6 +1,7 @@
 import {DataPointRaw, ExtractedDataPoint, TileChartDataPoint} from "./types.ts";
-import {color, InternMap, rollup, scaleDiverging, scaleLinear, scaleQuantize, sum, timeDay, union} from "d3";
+import { InternMap, rollup, sum, timeDay, union} from "d3";
 import {calculateAverageOtherContribution, compareContributionToRest, getEmptyMap} from "./helper.ts";
+import { contributionLabelScale } from "./colorScales.ts";
 
 export const extractRelevantInfo = (fetchedData: DataPointRaw[]): ExtractedDataPoint[] => fetchedData.map(d => {
     const date = timeDay.floor(new Date(d.date));
@@ -44,7 +45,8 @@ export const evaluateFromPOV = (authorId: string, extractedDataPoints: Extracted
                 date,
                 minutes: 0,
                 totalMinutes: 0,
-                contribution: 0.5
+                contribution: 0.5,
+                contributionCategory: contributionLabelScale(0.5)
             }
         }
         const { totalMinutes, uniquePersons } = minutesPerDay.get(date)!;
@@ -56,6 +58,7 @@ export const evaluateFromPOV = (authorId: string, extractedDataPoints: Extracted
             date,
             totalMinutes,
             contribution,
+            contributionCategory: contributionLabelScale(contribution),
             minutes: ownContribution
         }
     })

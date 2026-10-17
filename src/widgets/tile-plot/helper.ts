@@ -23,11 +23,11 @@ export const describeDataPoint = (d: TileChartDataPoint) => {
     }
     return (
         `${dateString}\n` +
-        `${formatDuration({ minutes: d.minutes || 0 })} out of ${formatDuration({ minutes: d.totalMinutes || 0 })} (${(d.contribution * 100).toFixed(0)}%)`
+        `${formatDuration({ minutes: d.minutes }, { zero: true })} out of ${formatDuration({ minutes: d.totalMinutes}, { zero: true })} (${(d.contribution * 100).toFixed(0)}%)`
     )
 }
 
-export const getEmptyMap = (from: Date, to: Date) => timeDays(timeMonday.floor(from), timeDay.floor(to))
+export const getEmptyMap = (from: Date, to: Date) => timeDays(timeMonday.floor(from), timeDay.ceil(to))
 
 export const calculateAverageOtherContribution = (
     minutesByPerson: InternMap<string, number>,
@@ -58,15 +58,4 @@ export const compareContributionToRest = ([personalContribution = 0, otherContri
 
 
     return personalContribution / total;
-};
-
-export const createQuantizedColorScale = () => {
-    const divergingScale = scaleDiverging(["#ff1f6b", "#d15bff", "#0065ff"]);
-    const colors = range(7).map(i => divergingScale(i / 6));
-
-    const labels = {
-        "en": ["nothing", "very little", "less", "average", "more", "much more", "everything"]
-    }
-
-    return scaleQuantize<string>().domain([0, 1]).range(labels.en)
 };

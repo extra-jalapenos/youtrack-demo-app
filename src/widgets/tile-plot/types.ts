@@ -23,7 +23,8 @@ export type TileChartDataPoint = {
     date: Date,
     minutes: number,
     totalMinutes: number,
-    contribution: number
+    contribution: number,
+    contributionCategory: string
 }
 
 export type TileChartConfig = {

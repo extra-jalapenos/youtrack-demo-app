@@ -12,6 +12,7 @@ import {
 } from "d3";
 import Loader from "@jetbrains/ring-ui-built/components/loader/loader";
 import {describeDataPoint} from "./helper.ts";
+import {colorScaleContributionLinear, contributionCategoryColour, contributionLabelScale} from "./colorScales.ts";
 
 const TileChart = ({ data, width = 200, height = 300 }: TileChartConfig) => {
     const svgRef = useRef<SVGSVGElement>(null);
@@ -28,7 +29,6 @@ const TileChart = ({ data, width = 200, height = 300 }: TileChartConfig) => {
 
     let canvasWidth = viewBoxWidth - margin.left - margin.right;
     let canvasHeight = viewBoxHeight - margin.top - margin.bottom;
-    const colorScale = scaleDiverging(["#ff1f6b", "#d15bff", "#0065ff"]);
 
     // a full hour is fully opaque
     const intensityScale = scaleLinear().domain([0, 60]).range([0, 1]);
@@ -79,24 +79,31 @@ const TileChart = ({ data, width = 200, height = 300 }: TileChartConfig) => {
         const rects = canvas.selectAll("rect")
             .data(data)
             .join(
-                enter => enter
-                    .append("rect")
-                    .attr("fill", "transparent")
-                    .transition()
-                    .duration((_: TileChartDataPoint) => 250 + Math.random() * 750)
-                    .attr("fill", (d: TileChartDataPoint) => changeOpacity(colorScale(d.contribution), intensityScale(d.totalMinutes)))
-                    .attr("data-total-minutes", (d: TileChartDataPoint) => d.totalMinutes)
-                    .attr("data-contribution", (d: TileChartDataPoint) => d.contribution)
-                    .attr("data-minutes", (d: TileChartDataPoint) => d.minutes)
-                    .selection(),
-                update => update
-                    .transition()
-                    .duration(500)
-                    .attr("fill", (d: TileChartDataPoint) => changeOpacity(colorScale(d.contribution), intensityScale(d.totalMinutes)))
-                    .attr("data-total-minutes", (d: TileChartDataPoint) => d.totalMinutes)
-                    .attr("data-contribution", (d: TileChartDataPoint) => d.contribution)
-                    .attr("data-minutes", (d: TileChartDataPoint) => d.minutes)
-                    .selection(),
+                enter => {
+                    const newRects = enter.append("rect").attr("fill", "transparent");
+                    newRects.append("title").text((d: TileChartDataPoint) => describeDataPoint(d));
+                    return newRects
+                        .transition()
+                        .duration((_: TileChartDataPoint) => 250 + Math.random() * 750)
+                        .attr("fill", (d: TileChartDataPoint) => changeOpacity(colorScaleContributionLinear(d.contribution), intensityScale(d.totalMinutes)))
+                        .attr("data-total-minutes", (d: TileChartDataPoint) => d.totalMinutes)
+                        .attr("data-contribution", (d: TileChartDataPoint) => d.contribution)
+                        .attr("data-minutes", (d: TileChartDataPoint) => d.minutes)
+                        .attr("data-contribution-category", (d: TileChartDataPoint) => d.contributionCategory)
+                        .selection();
+                },
+                update => {
+                    update.select("title").text((d: TileChartDataPoint) => describeDataPoint(d));
+                    return update
+                        .transition()
+                        .duration(500)
+                        .attr("fill", (d: TileChartDataPoint) => changeOpacity(colorScaleContributionLinear(d.contribution), intensityScale(d.totalMinutes)))
+                        .attr("data-total-minutes", (d: TileChartDataPoint) => d.totalMinutes)
+                        .attr("data-contribution", (d: TileChartDataPoint) => d.contribution)
+                        .attr("data-minutes", (d: TileChartDataPoint) => d.minutes)
+                        .attr("data-contribution-category", (d: TileChartDataPoint) => d.contributionCategory)
+                        .selection();
+                },
                 exit => exit.remove()
             )
             .attr("rx", yScale.step() * 0.2)
