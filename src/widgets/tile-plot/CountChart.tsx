@@ -9,6 +9,7 @@ import {
 } from "d3";
 import { margin } from "./helper.ts";
 import {
+    changeOpacity,
     contributionCategoryColour, contributionLabelScale
 } from "./colorScales.ts";
 
@@ -89,12 +90,13 @@ const CountChart = ({ data, width, height }: CountChartConfig) => {
                 exit => exit.remove()
             )
 
-        const rects = canvas.selectAll("rect")
+        const rects = canvas.selectAll("rect.count")
             .data(data)
             .join(
                 enter => {
                     const newRects = enter
                         .append("rect")
+                        .attr("class", "count")
                         .attr("x", (d: CountChartDataPoint) => xScale(d.label) || 0)
                         .attr("width", xScale.bandwidth())
                         .attr("y", canvasHeight)
@@ -104,7 +106,7 @@ const CountChart = ({ data, width, height }: CountChartConfig) => {
                         .attr("data-count", (d: CountChartDataPoint) => d.count);
                     const titles = newRects
                             .append("title")
-                            .text(d => d.count)
+                            .text(d => `${d.count} / benchmark: ${d.benchmark}`)
                     return newRects
                         .transition()
                         .duration(750)
@@ -114,7 +116,7 @@ const CountChart = ({ data, width, height }: CountChartConfig) => {
                 },
                 update => {
                     update.select("title")
-                        .text(d => d.count);
+                        .text(d => `${d.count} / benchmark: ${d.benchmark}`);
                     return update
                         .attr("data-label", (d: CountChartDataPoint) => d.label)
                         .attr("data-count", (d: CountChartDataPoint) => d.count)
@@ -126,6 +128,32 @@ const CountChart = ({ data, width, height }: CountChartConfig) => {
                 },
                 exit => exit.remove()
             )
+        //
+        // const benchmarks = canvas.selectAll("circle.benchmark")
+        //     .data(data)
+        //     .join(
+        //         enter => {
+        //             const benchmarkCircles = enter
+        //                 .append("circle")
+        //                 .attr("class", "benchmark")
+        //                 .attr("cx", (d: CountChartDataPoint) => (xScale.bandwidth() / 2) + Number(xScale(d.label)))
+        //                 .attr("data-benchmark", d => d.benchmark || 0)
+        //                 .attr("cy", d => yScale(0) - yScale(d.benchmark || 0))
+        //                 .attr("r", 0)
+        //             return benchmarkCircles
+        //                 .transition()
+        //                 .duration(750)
+        //                 .attr("r", yScale(5))
+        //                 .selection();
+        //         },
+        //         update => update
+        //             .transition()
+        //             .duration(500)
+        //             .attr("cy", (d: CountChartDataPoint) => yScale(d.benchmark || 0))
+        //             .selection(),
+        //         exit => exit.remove()
+        //     )
+
     }, [data]);
 
     if (data.length === 0)

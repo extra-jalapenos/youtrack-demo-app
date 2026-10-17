@@ -44,6 +44,10 @@ g.grid line {
   opacity: 0.05;
 }
 
+.benchmark {
+  fill: currentColor;
+}
+
 line {
   stroke: currentColor;
 }
