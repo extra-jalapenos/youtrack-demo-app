@@ -34,3 +34,16 @@ export type TileChartConfig = {
     width?: number,
     height?: number
 }
+
+export type CountChartDataPoint = {
+    label: string;
+    count: number;
+}
+
+export type CountChartConfig = {
+    data: CountChartDataPoint[],
+    viewBoxWidth?: number,
+    viewBoxHeight?: number,
+    width?: number,
+    height?: number
+}

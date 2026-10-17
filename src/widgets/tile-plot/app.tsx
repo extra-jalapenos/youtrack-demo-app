@@ -12,14 +12,15 @@ import type {AlertType} from "@jetbrains/ring-ui-built/components/alert/alert";
 import {extractAllPeople} from "./dataService.ts";
 import {
     calculateMinutesByDay,
-    calculateMinutesByDayAndPersonId,
+    calculateMinutesByDayAndPersonId, countContributionCategories,
     evaluateFromPOV,
     extractRelevantInfo
 } from "./processingData.ts";
 import ButtonGroup from "@jetbrains/ring-ui-built/components/button-group/button-group";
 import Button from "@jetbrains/ring-ui-built/components/button/button";
-import {author, ExtractedDataPoint, TileChartDataPoint} from "./types.ts";
+import {author, CountChartDataPoint, ExtractedDataPoint, TileChartDataPoint} from "./types.ts";
 import {getEmptyMap} from "./helper.ts";
+import CountChart from "./CountChart.tsx";
 
 const AppComponent = ({ host }: { host: HostAPI }) => {
     const [loading, setLoading] = useState<boolean>(true);
@@ -31,8 +32,10 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
     const [to, setTo] = useState(new Date());
     const [containerWidth, setContainerWidth] = useState(0);
     const [containerHeight, setContainerHeight] = useState(0);
-    const containerRef = useRef<HTMLDivElement|null>(null);
-    const [renderedData, setRenderedData] = useState<TileChartDataPoint[]>([])
+    const tilePlotRef = useRef<HTMLDivElement|null>(null);
+    const summaryPlotRef = useRef<HTMLDivElement|null>(null);
+    const [tileChartData, setTileChartData] = useState<TileChartDataPoint[]>([])
+    const [summaryChartData, setSummaryChartData] = useState<CountChartDataPoint[]>([])
 
     useEffect(() => {
         const fetchWorkItems = async () => {
@@ -63,12 +66,13 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
         if (fetchedData.length === 0)
             return
         const povData = evaluateFromPOV(selectedPerson, fetchedData, from, to);
-        setRenderedData([...povData]);
-        console.log("set pov data", povData);
+        setTileChartData([...povData]);
+        const countsByCategory = countContributionCategories(povData);
+        setSummaryChartData(countsByCategory);
     }, [selectedPerson, fetchedData, from, to]);
 
     useEffect(() => {
-        if (!containerRef.current) return;
+        if (!tilePlotRef.current) return;
 
         const resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
@@ -77,13 +81,15 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
             }
         });
 
-        resizeObserver.observe(containerRef.current);
+        resizeObserver.observe(tilePlotRef.current);
         return () => resizeObserver.disconnect();
     }, []);
 
     return (
         <>
-            <section>
+            <section
+                className="component"
+            >
                 <ButtonGroup>
                     {authors.map(author => {
                         return (
@@ -100,13 +106,23 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
             </section>
             <section
                 className="component"
-                ref={containerRef}
+                ref={tilePlotRef}
             >
                 <TilePlot
-                    data={renderedData}
+                    data={tileChartData}
                     width={containerWidth}
                     height={containerHeight}
                 />
+            </section>
+            <section
+                className="component"
+                ref={summaryPlotRef}
+            >
+                <CountChart
+                    data={summaryChartData}
+                    width={containerWidth}
+                    height={containerHeight}
+               />
             </section>
         </>
     )

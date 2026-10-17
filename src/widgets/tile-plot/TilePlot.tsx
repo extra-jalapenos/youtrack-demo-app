@@ -11,8 +11,12 @@ import {
     scaleDiverging, scaleLinear
 } from "d3";
 import Loader from "@jetbrains/ring-ui-built/components/loader/loader";
-import {describeDataPoint} from "./helper.ts";
-import {colorScaleContributionLinear, contributionCategoryColour, contributionLabelScale} from "./colorScales.ts";
+import {describeDataPoint, margin} from "./helper.ts";
+import {
+    changeOpacity,
+    colorScaleContributionLinear,
+    intensityScale
+} from "./colorScales.ts";
 
 const TileChart = ({ data, width = 200, height = 300 }: TileChartConfig) => {
     const svgRef = useRef<SVGSVGElement>(null);
@@ -20,28 +24,11 @@ const TileChart = ({ data, width = 200, height = 300 }: TileChartConfig) => {
     const viewBoxHeight = height > 0 ? height : 300;
     const viewBoxWidth = width > 0 ? width : 200;
 
-    const margin = {
-        left: 25,
-        right: 10,
-        bottom: 20,
-        top: 10,
-    }
-
     let canvasWidth = viewBoxWidth - margin.left - margin.right;
     let canvasHeight = viewBoxHeight - margin.top - margin.bottom;
 
     // a full hour is fully opaque
     const intensityScale = scaleLinear().domain([0, 60]).range([0, 1]);
-
-    const changeOpacity = (colorString: string, opacity: number): string => {
-       if (colorString.length === 0) {
-           return "transparent";
-       }
-        if (color(colorString) === null) {
-           return colorString
-       }
-       return color(colorString)!.copy({ opacity }).formatHex8()
-    }
 
     const lastMonday = timeMonday(new Date())
     const formatAsLocalWeekday = (d: Date) => d.toLocaleDateString([], { weekday: "short" })

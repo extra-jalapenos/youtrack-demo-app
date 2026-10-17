@@ -1,7 +1,7 @@
-import {DataPointRaw, ExtractedDataPoint, TileChartDataPoint} from "./types.ts";
+import {CountChartDataPoint, DataPointRaw, ExtractedDataPoint, TileChartDataPoint} from "./types.ts";
 import { InternMap, rollup, sum, timeDay, union} from "d3";
 import {calculateAverageOtherContribution, compareContributionToRest, getEmptyMap} from "./helper.ts";
-import { contributionLabelScale } from "./colorScales.ts";
+import {contributionLabels, contributionLabelScale} from "./colorScales.ts";
 
 export const extractRelevantInfo = (fetchedData: DataPointRaw[]): ExtractedDataPoint[] => fetchedData.map(d => {
     const date = timeDay.floor(new Date(d.date));
@@ -63,4 +63,13 @@ export const evaluateFromPOV = (authorId: string, extractedDataPoints: Extracted
         }
     })
     return fillDates
+}
+
+export const countContributionCategories = (evaluatedDataPoints: TileChartDataPoint[]): CountChartDataPoint[] => {
+    const countsByLabel = rollup(evaluatedDataPoints,
+        D => D.filter(d => d.totalMinutes).length,
+        d => d.contributionCategory
+    )
+
+    return contributionLabels.en.map((label: string) => ({ label, count: countsByLabel.get(label) || 0 }))
 }

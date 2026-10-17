@@ -11,6 +11,15 @@ import {
 } from "d3"
 import {TileChartDataPoint} from "./types.ts";
 import {formatDuration} from "date-fns/formatDuration";
+import {contributionLabelScale} from "./colorScales.ts";
+
+
+export const margin = {
+    left: 30,
+    right: 10,
+    bottom: 30,
+    top: 10,
+}
 
 export const getMondays = (from: Date, to: Date) => {
     return union([timeMonday.floor(from), ...timeMondays(from, to, 1), timeDay.floor(to)])
@@ -22,7 +31,8 @@ export const describeDataPoint = (d: TileChartDataPoint) => {
         return `${dateString}\nno work done by anybody`
     }
     return (
-        `${dateString}\n` +
+        `${dateString}\n\n` +
+        `Contributed ${contributionLabelScale(d.contribution)} in comparison to all members.\n` +
         `${formatDuration({ minutes: d.minutes }, { zero: true })} out of ${formatDuration({ minutes: d.totalMinutes}, { zero: true })} (${(d.contribution * 100).toFixed(0)}%)`
     )
 }
