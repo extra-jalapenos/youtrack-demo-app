@@ -14,7 +14,7 @@ import {
     calculateMinutesByDay,
     calculateMinutesByDayAndPersonId, countContributionCategories,
     evaluateFromPOV,
-    extractRelevantInfo
+    extractRelevantInfo, getAverageContributionPerCategory
 } from "./processingData.ts";
 import ButtonGroup from "@jetbrains/ring-ui-built/components/button-group/button-group";
 import Button from "@jetbrains/ring-ui-built/components/button/button";
@@ -26,6 +26,7 @@ import DatePicker from "@jetbrains/ring-ui-built/components/date-picker/date-pic
 const AppComponent = ({ host }: { host: HostAPI }) => {
     const [loading, setLoading] = useState<boolean>(true);
     const [isConfiguring, setIsConfiguring] = useState(false);
+    const [aggregation, setAggregation] = useState<string>("count");
     const [fetchedData, setFetchedData] = useState<ExtractedDataPoint[]>([]);
     const [authors, setAuthors] = useState<author[]>([]);
     const [selectedPerson, setSelectedPerson] = useState<string>("");
@@ -46,7 +47,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
                 const startDate = from.toISOString().split("T")[0];
                 const endDate = to.toISOString().split("T")[0];
                 const responseYoutrack: any = await host.fetchYouTrack(`workItems?startDate=${startDate}&endDate=${endDate}&fields=${fields}&query=${query}`);
-                console.log("responseYoutrack", responseYoutrack[0])
+                // console.log("responseYoutrack", responseYoutrack[0])
 
                 const relevantData = extractRelevantInfo(responseYoutrack);
                 const authors = extractAllPeople(responseYoutrack);
@@ -68,9 +69,20 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
             return
         const povData = evaluateFromPOV(selectedPerson, fetchedData, from, to);
         setTileChartData([...povData]);
-        const countsByCategory = countContributionCategories(povData);
-        setSummaryChartData(countsByCategory);
     }, [selectedPerson, fetchedData, from, to]);
+
+    useEffect(() => {
+        if (fetchedData.length === 0)
+            return
+        if (aggregation === "count") {
+            const countsByCategory = countContributionCategories(tileChartData);
+            setSummaryChartData(countsByCategory);
+        }
+        if (aggregation === "median") {
+            const medianContributionByCategory = getAverageContributionPerCategory(tileChartData);
+            setSummaryChartData(medianContributionByCategory);
+        }
+    }, [tileChartData, aggregation, selectedPerson]);
 
     useEffect(() => {
         if (!tilePlotRef.current) return;
@@ -86,6 +98,21 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
         return () => resizeObserver.disconnect();
     }, []);
 
+
+    useEffect(() => {
+        if (!summaryPlotRef.current) return;
+
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                setContainerWidth(entry.contentRect.width);
+                setContainerHeight(entry.contentRect.height);
+            }
+        });
+
+        resizeObserver.observe(summaryPlotRef.current);
+        return () => resizeObserver.disconnect();
+    }, []);
+
     return (
         <>
             <section>
@@ -98,6 +125,19 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
                                 onClick={() => setSelectedPerson(author.id)}
                             >
                                 {author.name}
+                            </Button>
+                        )
+                    })}
+                </ButtonGroup>
+                <ButtonGroup>
+                    {["count", "median"].map(mode => {
+                        return (
+                            <Button
+                                key={mode}
+                                active={mode === aggregation}
+                                onClick={() => setAggregation(mode)}
+                            >
+                                {mode}
                             </Button>
                         )
                     })}

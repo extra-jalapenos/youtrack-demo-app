@@ -22,6 +22,7 @@ export type ExtractedDataPoint = {
 export type TileChartDataPoint = {
     date: Date,
     minutes: number,
+    avgMinutes: number,
     totalMinutes: number,
     contribution: number,
     contributionCategory: string
@@ -38,6 +39,7 @@ export type TileChartConfig = {
 export type CountChartDataPoint = {
     label: string;
     count: number;
+    benchmark?: number;
 }
 
 export type CountChartConfig = {

@@ -7,28 +7,22 @@ import {
     scaleBand,
     timeDays,
     timeDay,
-    color,
-    scaleDiverging, scaleLinear
+    scaleLinear
 } from "d3";
-import Loader from "@jetbrains/ring-ui-built/components/loader/loader";
 import {describeDataPoint, margin} from "./helper.ts";
 import {
     changeOpacity,
-    colorScaleContributionLinear,
-    intensityScale
+    colorScaleContributionLinear, intensityScale
 } from "./colorScales.ts";
 
 const TileChart = ({ data, width, height }: TileChartConfig) => {
     const svgRef = useRef<SVGSVGElement>(null);
-    const [to, setTo] = useState(new Date());
+    const [to, _setTo] = useState(new Date());
     const viewBoxHeight = height > 0 ? height : 0;
     const viewBoxWidth = width > 0 ? width : 0;
 
     let canvasWidth = viewBoxWidth - margin.left - margin.right;
     let canvasHeight = viewBoxHeight - margin.top;
-
-    // a full hour is fully opaque
-    const intensityScale = scaleLinear().domain([0, 60]).range([0, 1]);
 
     const lastMonday = timeMonday(new Date())
     const formatAsLocalWeekday = (d: Date) => d.toLocaleDateString([], { weekday: "short" })
@@ -103,7 +97,7 @@ const TileChart = ({ data, width, height }: TileChartConfig) => {
     }, [data]);
 
     if (data.length === 0) {
-        return <Loader />
+        return
     }
 
     return(

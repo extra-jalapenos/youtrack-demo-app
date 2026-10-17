@@ -1,5 +1,5 @@
 import {CountChartDataPoint, DataPointRaw, ExtractedDataPoint, TileChartDataPoint} from "./types.ts";
-import { InternMap, rollup, sum, timeDay, union} from "d3";
+import {count, InternMap, median, rollup, sum, timeDay, union} from "d3";
 import {calculateAverageOtherContribution, compareContributionToRest, getEmptyMap} from "./helper.ts";
 import {contributionLabels, contributionLabelScale} from "./colorScales.ts";
 
@@ -46,18 +46,20 @@ export const evaluateFromPOV = (authorId: string, extractedDataPoints: Extracted
                 minutes: 0,
                 totalMinutes: 0,
                 contribution: 0.5,
+                avgMinutes: 0,
                 contributionCategory: contributionLabelScale(0.5)
             }
         }
         const { totalMinutes, uniquePersons } = minutesPerDay.get(date)!;
         const ownContribution: number = minutesByDayAndPersonId.get(date)!.get(authorId) || 0;
-        const avgContribution = calculateAverageOtherContribution(minutesByDayAndPersonId.get(date)!, authorId)
-        const contribution = compareContributionToRest([ownContribution, avgContribution])
+        const avgMinutes = calculateAverageOtherContribution(minutesByDayAndPersonId.get(date)!, authorId) || 0 as number;
+        const contribution = compareContributionToRest([ownContribution, avgMinutes])
 
         return {
             date,
             totalMinutes,
             contribution,
+            avgMinutes: avgMinutes,
             contributionCategory: contributionLabelScale(contribution),
             minutes: ownContribution
         }
@@ -65,11 +67,52 @@ export const evaluateFromPOV = (authorId: string, extractedDataPoints: Extracted
     return fillDates
 }
 
+export const getAverageContributionPerCategory = (evaluatedDataPoints: TileChartDataPoint[]): CountChartDataPoint[] => {
+    const medianContributionByLabel = rollup(evaluatedDataPoints,
+        D => {
+            const allNonZeroDays = D.filter(d => d.totalMinutes)
+            return {
+                count: median(allNonZeroDays, d => d.minutes),
+                benchmark: median(allNonZeroDays, d => d.avgMinutes)
+            }
+        },
+        d => d.contributionCategory
+    )
+    const dummyResult = { count: 0, benchmark: 0 }
+    return contributionLabels.en.map((label: string) => {
+        const labelIsPresent = medianContributionByLabel.has(label)
+            if (labelIsPresent) {
+                const values = medianContributionByLabel.get(label)
+                return { label, ...dummyResult, ...values }
+            }
+        return  { label, ...dummyResult }
+    })
+}
+
 export const countContributionCategories = (evaluatedDataPoints: TileChartDataPoint[]): CountChartDataPoint[] => {
-    const countsByLabel = rollup(evaluatedDataPoints,
-        D => D.filter(d => d.totalMinutes).length,
+    const allNonZeroDays = evaluatedDataPoints.filter(d => d.totalMinutes)
+    // calculation of avg contributionlabel
+    const otherPerspective = allNonZeroDays.map(d => {
+        return {
+            date: d.date,
+            minutes: d.avgMinutes,
+            contributionCategory: contributionLabelScale(d.avgMinutes)
+        }
+    })
+
+    const benchmarkCounts = rollup(otherPerspective, D => D.length, d => d.contributionCategory)
+
+    const countsByLabel = rollup(allNonZeroDays,
+        D => D.length,
         d => d.contributionCategory
     )
 
-    return contributionLabels.en.map((label: string) => ({ label, count: countsByLabel.get(label) || 0 }))
+    return contributionLabels.en.map((label: string) => {
+        return (
+            {
+                label,
+                count: countsByLabel.get(label) || 0,
+                benchmark: benchmarkCounts.get(label) || 0,
+            })
+    })
 }

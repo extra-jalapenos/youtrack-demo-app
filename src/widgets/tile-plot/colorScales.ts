@@ -1,7 +1,7 @@
 import {color, InternMap, scaleBand, scaleDiverging, scaleLinear, scaleThreshold, zip} from "d3";
 
 export const colorScaleContributionLinear = scaleDiverging(["#ff1f6b", "#d15bff", "#0065ff"]);
-export const intensityScale = scaleLinear().domain([0, 60]).range([0, 100]);
+export const intensityScale = scaleLinear().domain([0, 60]).range([0, 1]);
 
 export const changeOpacity = (colorString: string, opacity: number): string => {
     if (colorString.length === 0) {
@@ -26,7 +26,6 @@ export const contributionLabels = {
 }
 
 const constructContributionLabelScale = (labels: string[]) => {
-    const labelCount = labels.length;
     // without borders
     const bandCount = labels.length - 2;
     const thresholds: number[] = Array(bandCount+1).fill(0).map((_, idx) => (idx / bandCount) * (.98) + 0.01);

@@ -5,9 +5,8 @@ import {
     axisLeft,
     scaleBand,
     scaleLinear,
-    sum, axisRight, axisBottom
+    max, axisBottom
 } from "d3";
-import Loader from "@jetbrains/ring-ui-built/components/loader/loader";
 import { margin } from "./helper.ts";
 import {
     contributionCategoryColour, contributionLabelScale
@@ -27,7 +26,7 @@ const CountChart = ({ data, width, height }: CountChartConfig) => {
         .padding(0.3);
 
     let yScale = scaleLinear()
-        .domain([0, sum(data, d => d.count)])
+        .domain([0, max(data, d => d.count) || 100])
         .range([canvasHeight, 0])
         .nice();
 
@@ -108,15 +107,16 @@ const CountChart = ({ data, width, height }: CountChartConfig) => {
             )
     }, [data]);
 
-    if (data.length === 0) {
-        return <Loader />
-    }
+    if (data.length === 0)
+        return
 
     return(
         <>
             <svg
                 ref={svgRef}
                 viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
+                width={width}
+                height={height}
             >
             </svg>
         </>
