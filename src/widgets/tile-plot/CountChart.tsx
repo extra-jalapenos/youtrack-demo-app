@@ -13,10 +13,10 @@ import {
     contributionCategoryColour, contributionLabelScale
 } from "./colorScales.ts";
 
-const CountChart = ({ data, width = 200, height = 300 }: CountChartConfig) => {
+const CountChart = ({ data, width, height }: CountChartConfig) => {
     const svgRef = useRef<SVGSVGElement>(null);
-    const viewBoxHeight = height > 0 ? height : 300;
-    const viewBoxWidth = width > 0 ? width : 200;
+    const viewBoxHeight = height > 0 ? height : 0;
+    const viewBoxWidth = width > 0 ? width : 0;
 
     let canvasWidth = viewBoxWidth - margin.left - margin.right;
     let canvasHeight = viewBoxHeight - margin.top - margin.bottom;
@@ -41,6 +41,16 @@ const CountChart = ({ data, width = 200, height = 300 }: CountChartConfig) => {
                 .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
             axes.append("g")
+                .attr("class", "grid")
+                .selectAll("line")
+                .data(yScale.ticks(5))
+                .join("line")
+                .attr("x1", 0)
+                .attr("x2", canvasWidth)
+                .attr("y1", (d: number) => yScale(d))
+                .attr("y2", (d: number) => yScale(d));
+
+            axes.append("g")
                 .attr("class", "y axis")
                 .attr("transform", `translate(${0}, 0)`)
                 .call(axisLeft(yScale).ticks(5));
@@ -55,6 +65,7 @@ const CountChart = ({ data, width = 200, height = 300 }: CountChartConfig) => {
             svg.append("svg")
                 .attr("class", "canvas")
                 .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
         }
 
         const canvas = svg.select(".canvas");
@@ -71,6 +82,9 @@ const CountChart = ({ data, width = 200, height = 300 }: CountChartConfig) => {
                         .attr("fill", (d: CountChartDataPoint) => contributionCategoryColour.get(d.label) || "gray")
                         .attr("data-label", (d: CountChartDataPoint) => d.label!)
                         .attr("data-count", (d: CountChartDataPoint) => d.count);
+                    const titles = newRects
+                            .append("title")
+                            .text(d => d.count)
                     return newRects
                         .transition()
                         .duration(750)
@@ -79,6 +93,8 @@ const CountChart = ({ data, width = 200, height = 300 }: CountChartConfig) => {
                         .selection();
                 },
                 update => {
+                    update.select("title")
+                        .text(d => d.count);
                     return update
                         .attr("data-label", (d: CountChartDataPoint) => d.label)
                         .attr("data-count", (d: CountChartDataPoint) => d.count)

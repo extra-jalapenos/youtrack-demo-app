@@ -18,14 +18,14 @@ import {
     intensityScale
 } from "./colorScales.ts";
 
-const TileChart = ({ data, width = 200, height = 300 }: TileChartConfig) => {
+const TileChart = ({ data, width, height }: TileChartConfig) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const [to, setTo] = useState(new Date());
-    const viewBoxHeight = height > 0 ? height : 300;
-    const viewBoxWidth = width > 0 ? width : 200;
+    const viewBoxHeight = height > 0 ? height : 0;
+    const viewBoxWidth = width > 0 ? width : 0;
 
     let canvasWidth = viewBoxWidth - margin.left - margin.right;
-    let canvasHeight = viewBoxHeight - margin.top - margin.bottom;
+    let canvasHeight = viewBoxHeight - margin.top;
 
     // a full hour is fully opaque
     const intensityScale = scaleLinear().domain([0, 60]).range([0, 1]);
@@ -45,6 +45,7 @@ const TileChart = ({ data, width = 200, height = 300 }: TileChartConfig) => {
         if (!svgRef.current) return;
         const svg = select(svgRef.current);
 
+        console.log("Tile Chart", svgRef.current.clientWidth, svgRef.current.clientHeight);
         if (svg.select(".axes").empty()) {
             const axes = svg.append("g")
                 .attr("class", "axes")
@@ -110,6 +111,8 @@ const TileChart = ({ data, width = 200, height = 300 }: TileChartConfig) => {
             <svg
                 ref={svgRef}
                 viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
+                width={width}
+                height={height}
             >
             </svg>
         </>

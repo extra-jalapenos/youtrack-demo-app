@@ -6,7 +6,8 @@ body {
 }
 
 #root {
-  height: 100vh;
+  height: calc(100vh - var(--ring-unit));
+  width: calc(100vw - var(--ring-unit));
   background-color: var(--ring-content-background-color);
   font-family: var(--ring-font-family);
   font-size: var(--ring-font-size);
@@ -35,6 +36,11 @@ g.axes  text {
 
 svg.canvas rect[data-total-minutes="0"] {
   fill: currentColor;
+  opacity: 0.05;
+}
+
+g.grid line {
+  stroke: currentColor;
   opacity: 0.05;
 }
 

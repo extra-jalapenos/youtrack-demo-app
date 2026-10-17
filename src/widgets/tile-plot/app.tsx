@@ -21,6 +21,7 @@ import Button from "@jetbrains/ring-ui-built/components/button/button";
 import {author, CountChartDataPoint, ExtractedDataPoint, TileChartDataPoint} from "./types.ts";
 import {getEmptyMap} from "./helper.ts";
 import CountChart from "./CountChart.tsx";
+import DatePicker from "@jetbrains/ring-ui-built/components/date-picker/date-picker";
 
 const AppComponent = ({ host }: { host: HostAPI }) => {
     const [loading, setLoading] = useState<boolean>(true);
@@ -87,9 +88,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
 
     return (
         <>
-            <section
-                className="component"
-            >
+            <section>
                 <ButtonGroup>
                     {authors.map(author => {
                         return (
@@ -110,7 +109,9 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
             >
                 <TilePlot
                     data={tileChartData}
+                    viewBoxWidth={containerWidth}
                     width={containerWidth}
+                    viewBoxHeight={containerHeight}
                     height={containerHeight}
                 />
             </section>
@@ -120,7 +121,9 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
             >
                 <CountChart
                     data={summaryChartData}
+                    viewBoxWidth={containerWidth}
                     width={containerWidth}
+                    viewBoxHeight={containerHeight}
                     height={containerHeight}
                />
             </section>

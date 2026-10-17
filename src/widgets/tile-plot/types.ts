@@ -31,8 +31,8 @@ export type TileChartConfig = {
     viewBoxWidth?: number,
     viewBoxHeight?: number,
     data: TileChartDataPoint[],
-    width?: number,
-    height?: number
+    width: number,
+    height: number
 }
 
 export type CountChartDataPoint = {
@@ -42,8 +42,8 @@ export type CountChartDataPoint = {
 
 export type CountChartConfig = {
     data: CountChartDataPoint[],
-    viewBoxWidth?: number,
-    viewBoxHeight?: number,
-    width?: number,
-    height?: number
+    viewBoxWidth: number,
+    viewBoxHeight: number,
+    width: number,
+    height: number
 }
