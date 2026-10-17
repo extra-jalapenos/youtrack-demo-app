@@ -24,10 +24,11 @@ const CountChart = ({ data, width, height }: CountChartConfig) => {
     let xScale = scaleBand()
         .domain(contributionLabelScale.range())
         .range([0, canvasWidth])
-        .padding(0.3);
+        .paddingInner(0.4)
+        .paddingOuter(0.2);
 
     let yScale = scaleLinear()
-        .domain([0, max(data, d => d.count) || 100])
+        .domain([0, max(data, d => d.count * (1+ 1/3)) || 100])
         .range([canvasHeight, 0])
         .nice();
 

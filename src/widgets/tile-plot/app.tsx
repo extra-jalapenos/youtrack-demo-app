@@ -27,7 +27,7 @@ import ButtonToolbar from "@jetbrains/ring-ui-built/components/button-toolbar/bu
 const AppComponent = ({ host }: { host: HostAPI }) => {
     const [loading, setLoading] = useState<boolean>(true);
     const [isConfiguring, setIsConfiguring] = useState(false);
-    const [aggregation, setAggregation] = useState<string>("median");
+    const [aggregation, setAggregation] = useState<string>("count");
     const [fetchedData, setFetchedData] = useState<ExtractedDataPoint[]>([]);
     const [authors, setAuthors] = useState<author[]>([]);
     const [selectedPerson, setSelectedPerson] = useState<string>("");
@@ -55,7 +55,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
 
                 setAuthors(authors);
                 if (authors.length)
-                    setSelectedPerson(authors[0].id);
+                    setSelectedPerson(YTApp.me.id);
 
                 setFetchedData(relevantData);
             } catch {

@@ -91,7 +91,7 @@ type YTAppInterface = {
     type: 'user' | 'article' | 'ticket' | 'project' | 'app'
   };
   me: {
-    key: string;
+    id: string;
     name: string;
     login: string;
   }
