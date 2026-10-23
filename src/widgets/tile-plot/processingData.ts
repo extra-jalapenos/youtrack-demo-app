@@ -1,5 +1,5 @@
 import {CountChartDataPoint, DataPointRaw, ExtractedDataPoint, TileChartDataPoint} from "./types.ts";
-import {count, InternMap, median, rollup, sum, timeDay, union} from "d3";
+import {count, InternMap, median, rollup, sum, timeDay, union, timeMonday} from "d3";
 import {calculateAverageOtherContribution, compareContributionToRest, getEmptyMap} from "./helper.ts";
 import {contributionLabels, contributionLabelScale} from "./colorScales.ts";
 
@@ -65,6 +65,36 @@ export const evaluateFromPOV = (authorId: string, extractedDataPoints: Extracted
         }
     })
     return fillDates
+}
+
+export const addWeekAggregates = (dayPoints: TileChartDataPoint[]): TileChartDataPoint[] => {
+    const minutesByWeek = rollup(dayPoints,
+        D => {
+            return {
+                totalMinutes: sum(D, d => d.totalMinutes),
+                minutes: sum(D, d => d.minutes),
+                avgMinutes: sum(D, d => d.avgMinutes)
+            }
+        },
+        d => timeMonday(d.date).getTime()
+    )
+
+    const weekAggregates: TileChartDataPoint[] = Array.from(minutesByWeek.entries()).map(([weekTimestamp, { totalMinutes, minutes, avgMinutes }]) => {
+        const weekDate = new Date(weekTimestamp);
+        const contribution = compareContributionToRest([minutes, avgMinutes])
+
+        return {
+            date: weekDate,
+            minutes,
+            avgMinutes,
+            totalMinutes,
+            contribution,
+            contributionCategory: contributionLabelScale(contribution),
+            isWeekAggregate: true
+        }
+    })
+
+    return [...dayPoints, ...weekAggregates]
 }
 
 export const getAverageContributionPerCategory = (evaluatedDataPoints: TileChartDataPoint[]): CountChartDataPoint[] => {

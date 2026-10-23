@@ -25,7 +25,8 @@ export type TileChartDataPoint = {
     avgMinutes: number,
     totalMinutes: number,
     contribution: number,
-    contributionCategory: string
+    contributionCategory: string,
+    isWeekAggregate?: boolean
 }
 
 export type TileChartConfig = {

@@ -14,7 +14,7 @@ import {
     calculateMinutesByDay,
     calculateMinutesByDayAndPersonId, countContributionCategories,
     evaluateFromPOV,
-    extractRelevantInfo, getAverageContributionPerCategory
+    extractRelevantInfo, getAverageContributionPerCategory, addWeekAggregates
 } from "./processingData.ts";
 import ButtonGroup from "@jetbrains/ring-ui-built/components/button-group/button-group";
 import Button from "@jetbrains/ring-ui-built/components/button/button";
@@ -69,7 +69,8 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
         if (fetchedData.length === 0)
             return
         const povData = evaluateFromPOV(selectedPerson, fetchedData, from, to);
-        setTileChartData([...povData]);
+        const dataWithWeekAggregates = addWeekAggregates(povData);
+        setTileChartData([...dataWithWeekAggregates]);
     }, [selectedPerson, fetchedData, from, to]);
 
     useEffect(() => {

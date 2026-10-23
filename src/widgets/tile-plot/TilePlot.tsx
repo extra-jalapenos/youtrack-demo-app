@@ -27,8 +27,9 @@ const TileChart = ({ data, width, height }: TileChartConfig) => {
     const lastMonday = timeMonday(new Date())
     const formatAsLocalWeekday = (d: Date) => d.toLocaleDateString([], { weekday: "short" })
     const weekdays = timeDays(lastMonday, timeDay.offset(lastMonday, 7)).map(d => formatAsLocalWeekday(d))
+    const yLabels = [...weekdays, "week"]
     let yScale = scaleBand()
-        .domain(weekdays)
+        .domain(yLabels)
         .range([0, canvasHeight])
         .padding(0.2);
 
@@ -91,7 +92,7 @@ const TileChart = ({ data, width, height }: TileChartConfig) => {
             .attr("rx", yScale.step() * 0.2)
             .attr("ry", yScale.step() * 0.2)
             .attr("x", (d: TileChartDataPoint) => (canvasWidth - yScale.step()) - getWeekOffset(d.date) * yScale.step())
-            .attr("y", (d: TileChartDataPoint) => yScale(formatAsLocalWeekday(d.date))!)
+            .attr("y", (d: TileChartDataPoint) => yScale(d.isWeekAggregate ? "week" : formatAsLocalWeekday(d.date))!)
             .attr("width", yScale.bandwidth())
             .attr("height", yScale.bandwidth());
     }, [data]);

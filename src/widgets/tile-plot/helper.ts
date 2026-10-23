@@ -15,7 +15,7 @@ import {contributionLabelScale} from "./colorScales.ts";
 
 
 export const margin = {
-    left: 30,
+    left: 50,
     right: 10,
     bottom: 30,
     top: 10,
