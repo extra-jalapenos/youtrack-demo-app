@@ -15,7 +15,7 @@ import {
     colorScaleContributionLinear, intensityScale
 } from "./colorScales.ts";
 
-const TileChart = ({ data, width, height }: TileChartConfig) => {
+const TileChart = ({ data, width, height, mode = "day" }: TileChartConfig) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const [to, _setTo] = useState(new Date());
     const viewBoxHeight = height > 0 ? height : 0;
@@ -27,9 +27,14 @@ const TileChart = ({ data, width, height }: TileChartConfig) => {
     const lastMonday = timeMonday(new Date())
     const formatAsLocalWeekday = (d: Date) => d.toLocaleDateString([], { weekday: "short" })
     const weekdays = timeDays(lastMonday, timeDay.offset(lastMonday, 7)).map(d => formatAsLocalWeekday(d))
-    const yLabels = [...weekdays, "week"]
+
+    if (mode === "week")
+        intensityScale.domain([0, 60 * 7])
+    else
+        intensityScale.domain([0, 60])
+
     let yScale = scaleBand()
-        .domain(yLabels)
+        .domain(weekdays)
         .range([0, canvasHeight])
         .padding(0.2);
 
@@ -78,21 +83,25 @@ const TileChart = ({ data, width, height }: TileChartConfig) => {
                 update => {
                     update.select("title").text((d: TileChartDataPoint) => describeDataPoint(d));
                     return update
-                        .transition()
-                        .duration(500)
-                        .attr("fill", (d: TileChartDataPoint) => changeOpacity(colorScaleContributionLinear(d.contribution), intensityScale(d.totalMinutes)))
                         .attr("data-total-minutes", (d: TileChartDataPoint) => d.totalMinutes)
                         .attr("data-contribution", (d: TileChartDataPoint) => d.contribution)
                         .attr("data-minutes", (d: TileChartDataPoint) => d.minutes)
                         .attr("data-contribution-category", (d: TileChartDataPoint) => d.contributionCategory)
+                        .transition()
+                        .duration(500)
+                        .attr("fill", (d: TileChartDataPoint) => changeOpacity(colorScaleContributionLinear(d.contribution), intensityScale(d.totalMinutes)))
                         .selection();
                 },
-                exit => exit.remove()
+                exit => exit
+                    .transition()
+                    .duration(500)
+                    .attr("y", yScale(weekdays[0])!)
+                    .remove()
             )
             .attr("rx", yScale.step() * 0.2)
             .attr("ry", yScale.step() * 0.2)
             .attr("x", (d: TileChartDataPoint) => (canvasWidth - yScale.step()) - getWeekOffset(d.date) * yScale.step())
-            .attr("y", (d: TileChartDataPoint) => yScale(d.isWeekAggregate ? "week" : formatAsLocalWeekday(d.date))!)
+            .attr("y", (d: TileChartDataPoint) => yScale(formatAsLocalWeekday(d.date))!)
             .attr("width", yScale.bandwidth())
             .attr("height", yScale.bandwidth());
     }, [data]);

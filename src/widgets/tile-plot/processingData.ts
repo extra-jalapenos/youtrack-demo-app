@@ -24,6 +24,18 @@ export const calculateMinutesByDay = (extractedDataPoints: ExtractedDataPoint[])
     )
 }
 
+export const calculateMinutesByWeek = (extractedDataPoints: ExtractedDataPoint[]): InternMap<Date, { totalMinutes: number, uniquePersons: number }> => {
+    return rollup(extractedDataPoints,
+        D =>  {
+            return {
+                totalMinutes: sum(D, d => d.minutes),
+                uniquePersons: union(D.map(d => d.authorId)).size
+            }
+        },
+        d => timeMonday(d.date)
+    )
+}
+
 export const calculateMinutesByDayAndPersonId = (extractedDataPoints: ExtractedDataPoint[]): InternMap<Date, InternMap<string, number>> => {
     return rollup(extractedDataPoints,
         D => sum(D, d => d.minutes),
@@ -32,13 +44,43 @@ export const calculateMinutesByDayAndPersonId = (extractedDataPoints: ExtractedD
     )
 }
 
-export const evaluateFromPOV = (authorId: string, extractedDataPoints: ExtractedDataPoint[], from: Date, to: Date): TileChartDataPoint[] => {
-    const minutesPerDay = calculateMinutesByDay(extractedDataPoints);
-    const minutesByDayAndPersonId = calculateMinutesByDayAndPersonId(extractedDataPoints);
+
+export const calculateMinutesByWeekAndPersonId = (extractedDataPoints: ExtractedDataPoint[]): InternMap<Date, InternMap<string, number>> => {
+    return rollup(extractedDataPoints,
+        D => sum(D, d => d.minutes),
+        d => timeMonday(d.date),
+        d => d.authorId
+    )
+}
+
+export const evaluateFromPOV = (authorId: string,
+                                extractedDataPoints: ExtractedDataPoint[],
+                                from: Date,
+                                to: Date,
+                                by: "day" | "week" = "day"): TileChartDataPoint[] => {
+    const calculateMinutesByTimeframe = () => {
+        if (by === "day") {
+            return calculateMinutesByDay(extractedDataPoints);
+        } else {
+            return calculateMinutesByWeek(extractedDataPoints);
+        }
+    };
+
+    const calculateMinutesByTimeframeAndPersonId = () => {
+        if (by === "day") {
+            return calculateMinutesByDayAndPersonId(extractedDataPoints);
+        } else {
+            return calculateMinutesByWeekAndPersonId(extractedDataPoints);
+        }
+    }
+    const minutesByTimeframe = calculateMinutesByTimeframe();
+    const minutesByTimeframeAndPersonId = calculateMinutesByTimeframeAndPersonId();
 
     const allDays = getEmptyMap(from, to)
     const fillDates = allDays.map(date => {
-        const somebodyDidSomething = minutesPerDay.has(date);
+        const getDateToCheck = () => by === "day" ? date : timeMonday(date);
+        const dateToCheck = getDateToCheck();
+        const somebodyDidSomething = minutesByTimeframe.has(dateToCheck);
 
         if (somebodyDidSomething === false) {
             return {
@@ -50,9 +92,9 @@ export const evaluateFromPOV = (authorId: string, extractedDataPoints: Extracted
                 contributionCategory: contributionLabelScale(0.5)
             }
         }
-        const { totalMinutes, uniquePersons } = minutesPerDay.get(date)!;
-        const ownContribution: number = minutesByDayAndPersonId.get(date)!.get(authorId) || 0;
-        const avgMinutes = calculateAverageOtherContribution(minutesByDayAndPersonId.get(date)!, authorId) || 0 as number;
+        const { totalMinutes, uniquePersons } = minutesByTimeframe.get(dateToCheck)!;
+        const ownContribution: number = minutesByTimeframeAndPersonId.get(dateToCheck)!.get(authorId) || 0;
+        const avgMinutes = calculateAverageOtherContribution(minutesByTimeframeAndPersonId.get(dateToCheck)!, authorId) || 0 as number;
         const contribution = compareContributionToRest([ownContribution, avgMinutes])
 
         return {

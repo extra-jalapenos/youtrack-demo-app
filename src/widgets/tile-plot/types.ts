@@ -34,7 +34,8 @@ export type TileChartConfig = {
     viewBoxHeight?: number,
     data: TileChartDataPoint[],
     width: number,
-    height: number
+    height: number,
+    mode: "day" | "week"
 }
 
 export type CountChartDataPoint = {

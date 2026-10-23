@@ -23,6 +23,8 @@ import {getEmptyMap} from "./helper.ts";
 import CountChart from "./CountChart.tsx";
 import DatePicker from "@jetbrains/ring-ui-built/components/date-picker/date-picker";
 import ButtonToolbar from "@jetbrains/ring-ui-built/components/button-toolbar/button-toolbar";
+import Toggle, {Size} from "@jetbrains/ring-ui-built/components/toggle/toggle";
+import Text from "@jetbrains/ring-ui-built/components/text/text";
 
 const AppComponent = ({ host }: { host: HostAPI }) => {
     const [loading, setLoading] = useState<boolean>(true);
@@ -31,6 +33,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
     const [fetchedData, setFetchedData] = useState<ExtractedDataPoint[]>([]);
     const [authors, setAuthors] = useState<author[]>([]);
     const [selectedPerson, setSelectedPerson] = useState<string>("");
+    const [groupedByWeek, setGroupedByWeek] = useState<boolean>(false);
     const [from, setFrom] = useState(sub(new Date(), { years: 1 }));
     const [to, setTo] = useState(new Date());
     const [containerWidth, setContainerWidth] = useState(0);
@@ -68,10 +71,9 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
     useEffect(() => {
         if (fetchedData.length === 0)
             return
-        const povData = evaluateFromPOV(selectedPerson, fetchedData, from, to);
-        const dataWithWeekAggregates = addWeekAggregates(povData);
-        setTileChartData([...dataWithWeekAggregates]);
-    }, [selectedPerson, fetchedData, from, to]);
+        const povData = evaluateFromPOV(selectedPerson, fetchedData, from, to, groupedByWeek ? "week" : "day");
+        setTileChartData([...povData]);
+    }, [fetchedData, from, to, selectedPerson, groupedByWeek]);
 
     useEffect(() => {
         if (fetchedData.length === 0)
@@ -145,6 +147,12 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
                             )
                         })}
                     </ButtonGroup>
+                    <Toggle
+                        size={Size.Size14}
+                        defaultChecked={groupedByWeek}
+                        checked={groupedByWeek}
+                        onClick={() => setGroupedByWeek(!groupedByWeek)}
+                    ><Text>average by week</Text></Toggle>
                 </ButtonToolbar>
             </section>
             <section
@@ -157,6 +165,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
                     width={containerWidth}
                     viewBoxHeight={containerHeight}
                     height={containerHeight}
+                    mode={groupedByWeek ? "week" : "day"}
                 />
             </section>
             <section
