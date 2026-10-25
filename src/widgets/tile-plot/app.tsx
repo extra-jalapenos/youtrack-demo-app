@@ -12,7 +12,7 @@ import type {AlertType} from "@jetbrains/ring-ui-built/components/alert/alert";
 import {extractAllPeople} from "./dataService.ts";
 import {
     calculateMinutesByDay,
-    calculateMinutesByDayAndPersonId, countContributionCategories,
+    calculateMinutesByDayAndPersonId, getDayCountContributionCategories,
     evaluateFromPOV,
     extractRelevantInfo, getAverageContributionPerCategory, addWeekAggregates
 } from "./processingData.ts";
@@ -75,7 +75,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
         if (fetchedData.length === 0)
             return
         if (aggregation === "count") {
-            const countsByCategory = countContributionCategories(tileChartData);
+            const countsByCategory = getDayCountContributionCategories(tileChartData);
             setSummaryChartData(countsByCategory);
         }
         if (aggregation === "median") {

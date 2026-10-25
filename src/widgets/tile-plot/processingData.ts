@@ -161,7 +161,7 @@ export const getAverageContributionPerCategory = (evaluatedDataPoints: TileChart
     })
 }
 
-export const countContributionCategories = (evaluatedDataPoints: TileChartDataPoint[]): CountChartDataPoint[] => {
+export const getDayCountContributionCategories = (evaluatedDataPoints: TileChartDataPoint[]): CountChartDataPoint[] => {
     const allNonZeroDays = evaluatedDataPoints.filter(d => d.totalMinutes)
     // calculation of avg contributionlabel
     const otherPerspective = allNonZeroDays.map(d => {
