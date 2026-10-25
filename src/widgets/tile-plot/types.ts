@@ -41,7 +41,7 @@ export type TileChartConfig = {
 export type CountChartDataPoint = {
     label: string;
     value: number;
-    benchmark?: number;
+    benchmark: number;
 }
 
 export type CountChartConfig = {

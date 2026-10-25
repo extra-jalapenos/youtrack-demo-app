@@ -45,7 +45,7 @@ g.grid line {
 }
 
 .benchmark {
-  fill: currentColor;
+  opacity: 0.15;
 }
 
 line {

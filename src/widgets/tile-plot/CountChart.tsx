@@ -28,7 +28,7 @@ const CountChart = ({ data, width, height }: CountChartConfig) => {
         .paddingOuter(0.2);
 
     let yScale = scaleLinear()
-        .domain([0, max(data, d => d.value * (1+ 1/3)) || 100])
+        .domain([0, max(data, d => Math.max(d.value, d.benchmark) * (1+ 1/3)) || 100])
         .range([canvasHeight, 0])
         .nice();
 
@@ -91,69 +91,82 @@ const CountChart = ({ data, width, height }: CountChartConfig) => {
                 exit => exit.remove()
             )
 
-        const rects = canvas.selectAll("rect.value")
+        // because we have two bars per category we group them
+        const singleBarWidth = xScale.bandwidth() / 2 * 0.9
+
+        canvas.selectAll("rect.value")
             .data(data)
             .join(
                 enter => {
-                    const newRects = enter
+                    const rects = enter
                         .append("rect")
                         .attr("class", "value")
                         .attr("x", (d: CountChartDataPoint) => xScale(d.label) || 0)
-                        .attr("width", xScale.bandwidth())
+                        .attr("width", singleBarWidth)
                         .attr("y", canvasHeight)
                         .attr("height", 0)
                         .attr("fill", (d: CountChartDataPoint) => contributionCategoryColour.get(d.label) || "gray")
                         .attr("data-label", (d: CountChartDataPoint) => d.label!)
-                        .attr("data-count", (d: CountChartDataPoint) => d.value);
-                    const titles = newRects
-                            .append("title")
-                            .text(d => `${d.value} / benchmark: ${d.benchmark}`)
-                    return newRects
-                        .transition()
-                        .duration(750)
-                        .attr("y", (d: CountChartDataPoint) => yScale(d.value))
-                        .attr("height", (d: CountChartDataPoint) => yScale(0) - yScale(d.value))
-                        .selection();
+                        .attr("data-value", (d: CountChartDataPoint) => d.value);
+
+                    rects.each(function(d: CountChartDataPoint) {
+                        console.log(d)
+                        select(this).append("title")
+                            .text(`${d.value}`);
+                    });
+
+                    return rects;
                 },
                 update => {
-                    update.select("title")
-                        .text(d => `${d.value} / benchmark: ${d.benchmark}`);
-                    return update
+                    update
                         .attr("data-label", (d: CountChartDataPoint) => d.label)
                         .attr("data-value", (d: CountChartDataPoint) => d.value)
-                        .transition()
-                        .duration(500)
-                        .attr("y", (d: CountChartDataPoint) => yScale(d.value))
-                        .attr("height", (d: CountChartDataPoint) => yScale(0) - yScale(d.value))
-                        .selection();
+
+                    update.select("title").text(d => d.value)
+                    return update;
                 },
                 exit => exit.remove()
             )
-        //
-        // const benchmarks = canvas.selectAll("circle.benchmark")
-        //     .data(data)
-        //     .join(
-        //         enter => {
-        //             const benchmarkCircles = enter
-        //                 .append("circle")
-        //                 .attr("class", "benchmark")
-        //                 .attr("cx", (d: CountChartDataPoint) => (xScale.bandwidth() / 2) + Number(xScale(d.label)))
-        //                 .attr("data-benchmark", d => d.benchmark || 0)
-        //                 .attr("cy", d => yScale(0) - yScale(d.benchmark || 0))
-        //                 .attr("r", 0)
-        //             return benchmarkCircles
-        //                 .transition()
-        //                 .duration(750)
-        //                 .attr("r", yScale(5))
-        //                 .selection();
-        //         },
-        //         update => update
-        //             .transition()
-        //             .duration(500)
-        //             .attr("cy", (d: CountChartDataPoint) => yScale(d.benchmark || 0))
-        //             .selection(),
-        //         exit => exit.remove()
-        //     )
+            .transition()
+            .duration(500)
+            .attr("y", (d: CountChartDataPoint) => yScale(d.value))
+            .attr("height", (d: CountChartDataPoint) => yScale(0) - yScale(d.value));
+
+        canvas.selectAll("rect.benchmark")
+            .data(data)
+            .join(
+                enter => {
+                    const rects = enter
+                        .append("rect")
+                        .attr("class", "benchmark")
+                        .attr("x", (d: CountChartDataPoint) => xScale(d.label)! + xScale.bandwidth() - singleBarWidth || 0)
+                        .attr("width", singleBarWidth)
+                        .attr("y", canvasHeight)
+                        .attr("height", 0)
+                        .attr("fill", (d: CountChartDataPoint) => contributionCategoryColour.get(d.label) || "gray")
+                        .attr("data-label", (d: CountChartDataPoint) => d.label!)
+                        .attr("data-benchmark", (d: CountChartDataPoint) => d.benchmark)
+
+                    rects.each(function(d: CountChartDataPoint) {
+                        select(this).append("title")
+                            .text(d.benchmark);
+                    });
+                    return rects
+                },
+                update => {
+                    update
+                        .attr("data-label", (d: CountChartDataPoint) => d.label)
+                        .attr("data-benchmark", (d: CountChartDataPoint) => d.benchmark)
+
+                    update.select("title").text((d: CountChartDataPoint) => d.benchmark)
+                    return update;
+                },
+                exit => exit.remove()
+            )
+            .transition()
+            .duration(500)
+            .attr("y", (d: CountChartDataPoint) => yScale(d.benchmark))
+            .attr("height", (d: CountChartDataPoint) => yScale(0) - yScale(d.benchmark));
 
     }, [data]);
 
