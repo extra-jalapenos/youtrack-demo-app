@@ -45,7 +45,6 @@ const TileChart = ({ data, width, height, mode = "day" }: TileChartConfig) => {
         if (!svgRef.current) return;
         const svg = select(svgRef.current);
 
-        console.log("Tile Chart", svgRef.current.clientWidth, svgRef.current.clientHeight);
         if (svg.select(".axes").empty()) {
             const axes = svg.append("g")
                 .attr("class", "axes")

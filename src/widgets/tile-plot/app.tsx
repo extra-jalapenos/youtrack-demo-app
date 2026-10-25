@@ -19,9 +19,7 @@ import {
 import ButtonGroup from "@jetbrains/ring-ui-built/components/button-group/button-group";
 import Button from "@jetbrains/ring-ui-built/components/button/button";
 import {author, CountChartDataPoint, ExtractedDataPoint, TileChartDataPoint} from "./types.ts";
-import {getEmptyMap} from "./helper.ts";
 import CountChart from "./CountChart.tsx";
-import DatePicker from "@jetbrains/ring-ui-built/components/date-picker/date-picker";
 import ButtonToolbar from "@jetbrains/ring-ui-built/components/button-toolbar/button-toolbar";
 import Toggle, {Size} from "@jetbrains/ring-ui-built/components/toggle/toggle";
 import Text from "@jetbrains/ring-ui-built/components/text/text";
@@ -51,8 +49,6 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
                 const startDate = from.toISOString().split("T")[0];
                 const endDate = to.toISOString().split("T")[0];
                 const responseYoutrack: any = await host.fetchYouTrack(`workItems?startDate=${startDate}&endDate=${endDate}&fields=${fields}&query=${query}`);
-                // console.log("responseYoutrack", responseYoutrack[0])
-
                 const relevantData = extractRelevantInfo(responseYoutrack);
                 const authors = extractAllPeople(responseYoutrack);
 
@@ -73,7 +69,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
             return
         const povData = evaluateFromPOV(selectedPerson, fetchedData, from, to, groupedByWeek ? "week" : "day");
         setTileChartData([...povData]);
-    }, [fetchedData, from, to, selectedPerson, groupedByWeek]);
+    }, [fetchedData, selectedPerson, groupedByWeek]);
 
     useEffect(() => {
         if (fetchedData.length === 0)

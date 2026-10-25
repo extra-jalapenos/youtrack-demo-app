@@ -144,13 +144,13 @@ export const getAverageContributionPerCategory = (evaluatedDataPoints: TileChart
         D => {
             const allNonZeroDays = D.filter(d => d.totalMinutes)
             return {
-                count: median(allNonZeroDays, d => d.minutes),
+                value: median(allNonZeroDays, d => d.minutes),
                 benchmark: median(allNonZeroDays, d => d.avgMinutes)
             }
         },
         d => d.contributionCategory
     )
-    const dummyResult = { count: 0, benchmark: 0 }
+    const dummyResult = { value: 0, benchmark: 0 }
     return contributionLabels.en.map((label: string) => {
         const labelIsPresent = medianContributionByLabel.has(label)
             if (labelIsPresent) {
@@ -183,7 +183,7 @@ export const countContributionCategories = (evaluatedDataPoints: TileChartDataPo
         return (
             {
                 label,
-                count: countsByLabel.get(label) || 0,
+                value: countsByLabel.get(label) || 0,
                 benchmark: benchmarkCounts.get(label) || 0,
             })
     })
