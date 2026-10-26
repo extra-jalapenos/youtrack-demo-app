@@ -73,6 +73,7 @@ export const evaluateFromPOV = (authorId: string,
             return calculateMinutesByWeekAndPersonId(extractedDataPoints);
         }
     }
+
     const minutesByTimeframe = calculateMinutesByTimeframe();
     const minutesByTimeframeAndPersonId = calculateMinutesByTimeframeAndPersonId();
 
@@ -115,7 +116,7 @@ export const addWeekAggregates = (dayPoints: TileChartDataPoint[]): TileChartDat
             return {
                 totalMinutes: sum(D, d => d.totalMinutes),
                 minutes: sum(D, d => d.minutes),
-                avgMinutes: sum(D, d => d.avgMinutes)
+                avgMinutes: sum(D, d => d.avgMinutes),
             }
         },
         d => timeMonday(d.date).getTime()
@@ -140,12 +141,20 @@ export const addWeekAggregates = (dayPoints: TileChartDataPoint[]): TileChartDat
 }
 
 export const getAverageContributionPerCategory = (evaluatedDataPoints: TileChartDataPoint[]): CountChartDataPoint[] => {
+    // to get the average contribution of e.g. "little" we have to look at avg minutes on category "most" for perspective Person!
+    const averageContributionByLabel = rollup(evaluatedDataPoints,
+        D => {
+            const allNonZeroDays = D.filter(d => d.totalMinutes)
+            return median(allNonZeroDays, d => d.avgMinutes)
+        },
+        d => contributionLabelScale(1 - d.contribution))
+
     const medianContributionByLabel = rollup(evaluatedDataPoints,
         D => {
             const allNonZeroDays = D.filter(d => d.totalMinutes)
             return {
                 value: median(allNonZeroDays, d => d.minutes),
-                benchmark: median(allNonZeroDays, d => d.avgMinutes)
+                benchmark: averageContributionByLabel.get(D[0].contributionCategory)
             }
         },
         d => d.contributionCategory
@@ -163,16 +172,14 @@ export const getAverageContributionPerCategory = (evaluatedDataPoints: TileChart
 
 export const getDayCountContributionCategories = (evaluatedDataPoints: TileChartDataPoint[]): CountChartDataPoint[] => {
     const allNonZeroDays = evaluatedDataPoints.filter(d => d.totalMinutes)
-    // calculation of avg contributionlabel
-    const otherPerspective = allNonZeroDays.map(d => {
-        return {
-            date: d.date,
-            minutes: d.avgMinutes,
-            contributionCategory: contributionLabelScale(d.avgMinutes)
-        }
-    })
-
-    const benchmarkCounts = rollup(otherPerspective, D => D.length, d => d.contributionCategory)
+    // to get the average contribution of e.g. "little" we have to look at avg minutes on category "most" for perspective Person!
+    const otherContributionByLabel = rollup(allNonZeroDays,
+        D => {
+            const allNonZeroDays = D.filter(d => d.totalMinutes)
+            return allNonZeroDays.length
+        },
+        d => contributionLabelScale(1 - d.contribution)
+    )
 
     const countsByLabel = rollup(allNonZeroDays,
         D => D.length,
@@ -184,7 +191,7 @@ export const getDayCountContributionCategories = (evaluatedDataPoints: TileChart
             {
                 label,
                 value: countsByLabel.get(label) || 0,
-                benchmark: benchmarkCounts.get(label) || 0,
+                benchmark: otherContributionByLabel.get(label) || 0,
             })
     })
 }
