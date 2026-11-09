@@ -24,7 +24,7 @@ const randomInt = (min: number, max: number): number => min + Math.floor(Math.ra
 const createAuthor = (name: string): author => ({
     id: generateUlid(),
     name,
-    login: name.toLowerCase().trim().replace(/\s+/g, "."),
+    login: name.toLowerCase().trim(),
 });
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;

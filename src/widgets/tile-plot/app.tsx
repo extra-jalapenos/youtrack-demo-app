@@ -18,18 +18,19 @@ import {
 } from "./processingData.ts";
 import ButtonGroup from "@jetbrains/ring-ui-built/components/button-group/button-group";
 import Button from "@jetbrains/ring-ui-built/components/button/button";
-import {author, CountChartDataPoint, ExtractedDataPoint, TileChartDataPoint} from "./types.ts";
+import {author, CountChartDataPoint, DataPointRaw, ExtractedDataPoint, TileChartDataPoint} from "./types.ts";
 import CountChart from "./CountChart.tsx";
 import ButtonToolbar from "@jetbrains/ring-ui-built/components/button-toolbar/button-toolbar";
 import Toggle, {Size} from "@jetbrains/ring-ui-built/components/toggle/toggle";
 import Text from "@jetbrains/ring-ui-built/components/text/text";
 import { mockData } from './mockData.ts';
+import TimePlot from './TimePlot.tsx';
 
 const AppComponent = ({ host }: { host: HostAPI }) => {
     const [loading, setLoading] = useState<boolean>(true);
     const [isConfiguring, setIsConfiguring] = useState(false);
     const [aggregation, setAggregation] = useState<string>("count");
-    const [fetchedData, setFetchedData] = useState<ExtractedDataPoint[]>([]);
+    const [fetchedData, setFetchedData] = useState<DataPointRaw[]>([]);
     const [authors, setAuthors] = useState<author[]>([]);
     const [selectedPerson, setSelectedPerson] = useState<string>("");
     const [groupedByWeek, setGroupedByWeek] = useState<boolean>(false);
@@ -41,36 +42,36 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
     const summaryPlotRef = useRef<HTMLDivElement|null>(null);
     const [tileChartData, setTileChartData] = useState<TileChartDataPoint[]>([])
     const [summaryChartData, setSummaryChartData] = useState<CountChartDataPoint[]>([])
+    const fetchWorkItems = async () => {
+        try {
+            const query = "Subtask of: TODO-380"
+            const fields = "id,author(id,name,login),duration(minutes),date,text,issue(id,customFields(id,name,value(id,name)))"
+            const startDate = from.toISOString().split("T")[0];
+            const endDate = to.toISOString().split("T")[0];
+            const responseYoutrack: any = await host.fetchYouTrack(`workItems?startDate=${startDate}&endDate=${endDate}&fields=${fields}&query=${query}`);
+            const relevantData = extractRelevantInfo(responseYoutrack);
+            const authors = extractAllPeople(responseYoutrack);
+
+            setAuthors(authors);
+            if (authors.length)
+                setSelectedPerson(YTApp.me.id);
+
+            setFetchedData(relevantData);
+        } catch {
+            const mockDataPoints = mockData(from, to, ["Alice", "Bob", "Charlie", "David"], 500);
+            const relevantData = (mockDataPoints);
+            const authors = extractAllPeople(mockDataPoints);
+            
+            setFetchedData(relevantData);
+            setAuthors(authors);
+            if (authors.length)
+                setSelectedPerson(authors[0].id);
+            return
+            host.alert('YTApp: could not request custom HTTP endpoint', 'error' as AlertType.ERROR)
+        }
+    }
 
     useEffect(() => {
-        const fetchWorkItems = async () => {
-            try {
-                const query = "Subtask of: TODO-380"
-                const fields = "id,author(id,name,login),duration(minutes),date,text,issue(id,customFields(id,name,value(id,name)))"
-                const startDate = from.toISOString().split("T")[0];
-                const endDate = to.toISOString().split("T")[0];
-                const responseYoutrack: any = await host.fetchYouTrack(`workItems?startDate=${startDate}&endDate=${endDate}&fields=${fields}&query=${query}`);
-                const relevantData = extractRelevantInfo(responseYoutrack);
-                const authors = extractAllPeople(responseYoutrack);
-
-                setAuthors(authors);
-                if (authors.length)
-                    setSelectedPerson(YTApp.me.id);
-
-                setFetchedData(relevantData);
-            } catch {
-                const mockDataPoints = mockData(from, to, ["Alice", "Bob", "Charlie", "David"], 500);
-                const relevantData = extractRelevantInfo(mockDataPoints);
-                const authors = extractAllPeople(mockDataPoints);
-                
-                setFetchedData(relevantData);
-                setAuthors(authors);
-                if (authors.length)
-                    setSelectedPerson(authors[0].id);
-                return
-                host.alert('YTApp: could not request custom HTTP endpoint', 'error' as AlertType.ERROR)
-            }
-        }
         fetchWorkItems()
     }, [from, to]);
 
@@ -141,19 +142,31 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
                         })}
                     </ButtonGroup>
                 </ButtonToolbar>
+                <Button
+                    onClick={() => fetchWorkItems()}
+                >
+                    Refresh Data
+                </Button>
             </section>
             <section
                 className="component"
                 ref={tilePlotRef}
             >
-                <TilePlot
+                {/* <TilePlot
                     data={tileChartData}
                     viewBoxWidth={containerWidth}
                     width={containerWidth}
                     viewBoxHeight={containerHeight}
                     height={containerHeight}
                     mode={groupedByWeek ? "week" : "day"}
-                />
+                /> */}
+                <TimePlot
+                    data={fetchedData}
+                    width={containerWidth}
+                    height={containerHeight}
+                >
+
+                </TimePlot>
             </section>
         </>
     )
