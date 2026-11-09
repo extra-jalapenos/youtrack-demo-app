@@ -23,6 +23,7 @@ import CountChart from "./CountChart.tsx";
 import ButtonToolbar from "@jetbrains/ring-ui-built/components/button-toolbar/button-toolbar";
 import Toggle, {Size} from "@jetbrains/ring-ui-built/components/toggle/toggle";
 import Text from "@jetbrains/ring-ui-built/components/text/text";
+import { mockData } from './mockData.ts';
 
 const AppComponent = ({ host }: { host: HostAPI }) => {
     const [loading, setLoading] = useState<boolean>(true);
@@ -32,8 +33,8 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
     const [authors, setAuthors] = useState<author[]>([]);
     const [selectedPerson, setSelectedPerson] = useState<string>("");
     const [groupedByWeek, setGroupedByWeek] = useState<boolean>(false);
-    const [from, setFrom] = useState(sub(new Date(), { years: 1 }));
-    const [to, setTo] = useState(new Date());
+    const [from, setFrom] = useState(sub(new Date(), { months: 3, weeks: 5 }));
+    const [to, setTo] = useState((new Date()));
     const [containerWidth, setContainerWidth] = useState(0);
     const [containerHeight, setContainerHeight] = useState(0);
     const tilePlotRef = useRef<HTMLDivElement|null>(null);
@@ -58,6 +59,15 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
 
                 setFetchedData(relevantData);
             } catch {
+                const mockDataPoints = mockData(from, to, ["Alice", "Bob", "Charlie", "David"], 500);
+                const relevantData = extractRelevantInfo(mockDataPoints);
+                const authors = extractAllPeople(mockDataPoints);
+                
+                setFetchedData(relevantData);
+                setAuthors(authors);
+                if (authors.length)
+                    setSelectedPerson(authors[0].id);
+                return
                 host.alert('YTApp: could not request custom HTTP endpoint', 'error' as AlertType.ERROR)
             }
         }
@@ -130,25 +140,6 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
                             )
                         })}
                     </ButtonGroup>
-                    <ButtonGroup>
-                        {["count", "median"].map(mode => {
-                            return (
-                                <Button
-                                    key={mode}
-                                    active={mode === aggregation}
-                                    onClick={() => setAggregation(mode)}
-                                >
-                                    {mode}
-                                </Button>
-                            )
-                        })}
-                    </ButtonGroup>
-                    <Toggle
-                        size={Size.Size14}
-                        defaultChecked={groupedByWeek}
-                        checked={groupedByWeek}
-                        onClick={() => setGroupedByWeek(!groupedByWeek)}
-                    ><Text>average by week</Text></Toggle>
                 </ButtonToolbar>
             </section>
             <section
@@ -163,18 +154,6 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
                     height={containerHeight}
                     mode={groupedByWeek ? "week" : "day"}
                 />
-            </section>
-            <section
-                className="component"
-                ref={summaryPlotRef}
-            >
-                <CountChart
-                    data={summaryChartData}
-                    viewBoxWidth={containerWidth}
-                    width={containerWidth}
-                    viewBoxHeight={containerHeight}
-                    height={containerHeight}
-               />
             </section>
         </>
     )

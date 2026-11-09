@@ -6,12 +6,12 @@ import {ControlsHeight, ControlsHeightContext} from '@jetbrains/ring-ui-built/co
 import {EmbeddableWidgetAPI, HostAPI} from "../../../@types/globals";
 
 // Register widget in YouTrack. To learn more, see https://www.jetbrains.com/help/youtrack/devportal-apps/apps-host-api.html
-const host: HostAPI = await YTApp.register();
+// const host: HostAPI = await YTApp.register();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <StrictMode>
         <ControlsHeightContext.Provider value={ControlsHeight.S}>
-            <App host={host} />
+            <App />
         </ControlsHeightContext.Provider>
     </StrictMode>
 );

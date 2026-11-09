@@ -18,6 +18,7 @@ import {
 const TileChart = ({ data, width, height, mode = "day" }: TileChartConfig) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const [to, _setTo] = useState(new Date());
+    console.log(to)
     const viewBoxHeight = height > 0 ? height : 0;
     const viewBoxWidth = width > 0 ? width : 0;
 
