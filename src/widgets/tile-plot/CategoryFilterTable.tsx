@@ -10,39 +10,33 @@ type CategoryFilterTableProps = {
 };
 
 const CategoryFilterTable = ({summary, activeCategories, onToggle}: CategoryFilterTableProps) => (
-    <table className="category-table">
-        <thead>
-        <tr>
-            <th scope="col">Category</th>
-            <th scope="col" className="numeric">Days</th>
-            <th scope="col" className="numeric">My time</th>
-        </tr>
-        </thead>
-        <tbody>
+    <div className="category-list">
+        <div className="category-row category-header" aria-hidden="true">
+            <span>Category</span>
+            <span className="numeric">Days</span>
+            <span className="numeric">My time</span>
+        </div>
         {summary.map(({label, days, ownMinutes}) => {
             const colour = contributionCategoryColour.get(label);
             return (
-                <tr key={label}>
-                    <td>
-                        <button
-                            type="button"
-                            className="category-toggle"
-                            aria-pressed={activeCategories.has(label)}
-                            disabled={days === 0}
-                            onClick={() => onToggle(label)}
-                            style={{'--category-colour': colour} as CSSProperties}
-                        >
-                            <span className="category-swatch"/>
-                            {label}
-                        </button>
-                    </td>
-                    <td className="numeric">{days}</td>
-                    <td className="numeric">{formatDuration({minutes: ownMinutes}, {zero: true})}</td>
-                </tr>
+                <div key={label} className="category-row">
+                    <button
+                        type="button"
+                        className="category-toggle"
+                        aria-pressed={activeCategories.has(label)}
+                        disabled={days === 0}
+                        onClick={() => onToggle(label)}
+                        style={{'--category-colour': colour} as CSSProperties}
+                    >
+                        <span className="category-swatch"/>
+                        {label}
+                    </button>
+                    <span className="numeric">{days}</span>
+                    <span className="numeric">{formatDuration({minutes: ownMinutes}, {zero: true})}</span>
+                </div>
             );
         })}
-        </tbody>
-    </table>
+    </div>
 );
 
 export default CategoryFilterTable;

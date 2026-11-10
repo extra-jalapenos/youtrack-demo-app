@@ -150,7 +150,10 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
 
     return (
       <>
-        <section>
+        <section
+            id="header"
+            className="component"
+        >
           <ButtonToolbar>
             <ButtonGroup>
               {authors.map(author => {
@@ -165,21 +168,18 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
                             )
                         })}
             </ButtonGroup>
+            
+            <Button
+                onClick={() => fetchWorkItems()}
+            >
+                Refresh Data
+            </Button>
           </ButtonToolbar>
-          <CategoryFilterTable
-            summary={categorySummary}
-            activeCategories={activeCategories}
-            onToggle={toggleCategory}
-          />
-          <Button
-            onClick={() => fetchWorkItems()}
-          >
-            Refresh Data
-          </Button>
         </section>
         <section
-          className="component"
-          ref={tilePlotRef}
+            id="graph"
+            className="component"
+            ref={tilePlotRef}
         >
           {/* <TilePlot
                     data={tileChartData}
@@ -194,6 +194,13 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
             width={containerWidth}
             height={containerHeight}
             activeCategories={activeCategories}
+          />
+        </section>
+        <section id="summary">
+          <CategoryFilterTable
+            summary={categorySummary}
+            activeCategories={activeCategories}
+            onToggle={toggleCategory}
           />
         </section>
       </>
