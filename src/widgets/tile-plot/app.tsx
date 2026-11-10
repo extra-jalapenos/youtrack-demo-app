@@ -30,7 +30,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
     const [loading, setLoading] = useState<boolean>(true);
     const [isConfiguring, setIsConfiguring] = useState(false);
     const [aggregation, setAggregation] = useState<string>("count");
-    const [fetchedData, setFetchedData] = useState<DataPointRaw[]>([]);
+    const [fetchedData, setFetchedData] = useState<ExtractedDataPoint[]>([]);
     const [authors, setAuthors] = useState<author[]>([]);
     const [selectedPerson, setSelectedPerson] = useState<string>("");
     const [groupedByWeek, setGroupedByWeek] = useState<boolean>(false);
@@ -59,7 +59,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
             setFetchedData(relevantData);
         } catch {
             const mockDataPoints = mockData(from, to, ["Alice", "Bob", "Charlie", "David"], 500);
-            const relevantData = (mockDataPoints);
+            const relevantData = extractRelevantInfo(mockDataPoints);
             const authors = extractAllPeople(mockDataPoints);
             
             setFetchedData(relevantData);
@@ -161,7 +161,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
                     mode={groupedByWeek ? "week" : "day"}
                 /> */}
           <TimePlot
-            data={fetchedData}
+            data={tileChartData}
             width={containerWidth}
             height={containerHeight}
           />

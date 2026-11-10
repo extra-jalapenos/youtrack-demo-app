@@ -44,6 +44,12 @@ g.grid line {
   opacity: 0.05;
 }
 
+.total-minutes {
+  font-size: var(--ring-font-size-smaller);
+  fill: currentColor;
+  opacity: 0.25;
+}
+
 .benchmark {
   opacity: 0.25;
 }

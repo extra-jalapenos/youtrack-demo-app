@@ -13,6 +13,15 @@ export type DataPointRaw = {
     date: number;
 }
 
+export type TimeChartDataPoint = {
+    date: Date,
+    minutes: number,
+    avgMinutes: number,
+    totalMinutes: number,
+    contribution: number,
+    contributionCategory: string
+}
+
 export type ExtractedDataPoint = {
     minutes: number;
     authorId: string;

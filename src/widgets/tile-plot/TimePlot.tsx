@@ -1,6 +1,12 @@
 // we only feed raw data into the component.
 import { useRef, useEffect } from "react";
-import { DataPointRaw } from "./types.ts";
+import { TimeChartDataPoint } from "./types.ts";
+
+import {
+    changeOpacity,
+    colorScaleContributionLinear, intensityScale
+} from "./colorScales.ts";
+
 import { max, rollup, sum, min } from "d3-array";
 import { select } from "d3-selection";
 import { scaleBand, scaleLinear } from "d3-scale";
@@ -20,37 +26,34 @@ const TimePlot = ({
   width,
   height,
 }: {
-  data: DataPointRaw[];
+  data: TimeChartDataPoint[];
   width: number;
   height: number;
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  console.log("TimePlot data", data);
 
   const viewBoxHeight = height > 0 ? height : 0;
   const viewBoxWidth = width > 0 ? width : 0;
 
-  // One effect builds the scales from the current data + size, then draws axes and bars with them.
   useEffect(() => {
-    if (!svgRef.current) {return;}
+    if (!svgRef.current) {
+        return;
+    }
 
     const canvasWidth = viewBoxWidth - margins.left - margins.right;
     const canvasHeight = viewBoxHeight - margins.top - margins.bottom;
     // not measured yet (or nothing to show): wait for the next width/height/data change
-    if (canvasWidth <= 0 || canvasHeight <= 0 || data.length === 0) {return;}
+    if (canvasWidth <= 0 || canvasHeight <= 0 || data.length === 0) {
+        return;
+    }
 
     const svg = select(svgRef.current);
 
-    // minutes per week, keyed by the timestamp of that week's Monday
-    const minutesPerDay = rollup(
-      data,
-      (D: DataPointRaw[]) => sum(D, (d) => d.duration.minutes),
-      (d: DataPointRaw) => timeDay.floor(new Date(d.date)),
-    );
-
     // x: one band per week from the first week with data until now
-    const minDate = new Date(min(data, (d) => d.date) as number);
+    const minDate = data[0].date;
     const days = timeDay
-      .range(timeDay.floor(minDate), timeDay.offset(new Date(), 1))
+      .range(timeDay.floor(minDate), new Date())
       .map((d) => +d);
 
     const xScale = scaleBand<number>()
@@ -58,9 +61,8 @@ const TimePlot = ({
       .range([0, canvasWidth])
       .padding(0.2);
 
-    // y: minutes
     const yScale = scaleLinear()
-      .domain([0, max(minutesPerDay.values()) ?? 0])
+      .domain([0, max(data, (d) => d.totalMinutes) as number])
       .range([canvasHeight, 0])
       .nice();
 
@@ -82,26 +84,34 @@ const TimePlot = ({
           .tickValues(visibleTicks)
           .tickFormat((d) => formatWeekTick(+d)),
       );
+
     svg
       .select<SVGGElement>(".y.axis")
       .transition()
       .duration(TRANSITION_MS)
       .call(axisLeft(yScale));
 
+    const canvas = svg.select(".canvas");
     // bars, keyed by week so changed data updates in place instead of appending duplicates
-    svg
-      .select<SVGGElement>(".canvas")
+    canvas
       .selectAll<SVGRectElement, [number, number]>("rect")
-      .data(Array.from(minutesPerDay), (d) => d[0])
+      .data(Array.from(data))
       .join(
-        (enter) =>
-          enter
-            .append("rect")
-            .attr("fill", "steelblue")
-            .attr("x", (d) => xScale(d[0]) ?? 0)
-            .attr("width", xScale.bandwidth())
-            .attr("y", canvasHeight)
-            .attr("height", 0),
+        (enter) => {
+            const totalMinuteRects = enter
+                .append("rect")
+                .attr("class", "total-minutes")
+                .attr("data-value", (d: TimeChartDataPoint) => d.totalMinutes)
+                .attr("x", (d) => xScale(d.date.getTime()) ?? 0)
+                .attr("width", xScale.bandwidth())
+                .attr("y", canvasHeight)
+                .attr("height", 0)
+
+            totalMinuteRects
+                .append("title")
+                .text((d: TimeChartDataPoint) => `${d.date.toLocaleDateString()}: ${d.totalMinutes} minutes`);
+            return totalMinuteRects;
+        },
         (update) => update,
         (exit) =>
           exit
@@ -111,13 +121,48 @@ const TimePlot = ({
             .attr("height", 0)
             .remove(),
       )
-      .attr("data-value", (d) => JSON.stringify(d))
       .transition()
       .duration(TRANSITION_MS)
-      .attr("x", (d) => xScale(d[0]) ?? 0)
+      .attr("x", (d) => xScale(d.date.getTime()) ?? 0)
       .attr("width", xScale.bandwidth())
-      .attr("y", (d) => yScale(d[1]))
-      .attr("height", (d) => canvasHeight - yScale(d[1]));
+      .attr("y", (d) => yScale(d.totalMinutes))
+      .attr("height", (d) => canvasHeight - yScale(d.totalMinutes));
+
+
+    canvas.selectAll<SVGRectElement, [number, number]>("rect.own-contribution")
+        .data(Array.from(data))
+        .join(
+            (enter) => {
+                const ownContributionRects = enter
+                    .append("rect")
+                    .attr("class", "own-contribution")
+                    .attr("data-value", (d: TimeChartDataPoint) => d.contribution)
+                    .attr("x", (d) => xScale(d.date.getTime()) ?? 0)
+                    .attr("width", xScale.bandwidth())
+                    .attr("y", canvasHeight)
+                    .attr("height", 0)
+
+                ownContributionRects
+                    .append("title")
+                    .text((d: TimeChartDataPoint) => `${d.date.toLocaleDateString()}: ${d.contribution} minutes`);
+                return ownContributionRects;
+            },
+            (update) => update,
+            (exit) =>
+                exit
+                    .transition()
+                    .duration(TRANSITION_MS)
+                    .attr("y", canvasHeight)
+                    .attr("height", 0)
+                    .remove(),
+        )
+        .transition()
+        .duration(TRANSITION_MS)
+        .attr("x", (d) => xScale(d.date.getTime()) ?? 0)
+        .attr("width", xScale.bandwidth())
+        .attr("y", (d) => yScale(d.minutes))
+        .attr("height", (d) => yScale(0) - yScale(d.minutes))
+        .attr("fill", (d) => colorScaleContributionLinear(d.contribution));
   }, [data, viewBoxWidth, viewBoxHeight]);
 
   const canvasHeight = viewBoxHeight - margins.top - margins.bottom;
