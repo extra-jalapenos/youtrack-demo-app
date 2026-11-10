@@ -3,9 +3,10 @@ import { useRef, useState, useEffect } from "react";
 import {author, CountChartDataPoint, DataPointRaw, TileChartDataPoint} from "./types.ts";
 import { InternMap, max, rollup, sum, min } from "d3-array";
 import { select } from "d3-selection";
-import { scaleLinear, scaleTime } from "d3-scale";
+import { scaleBand, scaleLinear, scaleTime } from "d3-scale";
 import { axisLeft, axisBottom } from "d3-axis";
-import { transition } from "d3";
+import { timeDay, timeMonday } from "d3-time";
+import { transition } from "d3-transition";
 
 const processData = (data: DataPointRaw[]): InternMap<string, number> => {
     return rollup(data,
@@ -22,9 +23,16 @@ const TimePlot = ({ data, width, height }: { data: DataPointRaw[]; width: number
     const viewBoxHeight = height > 0 ? height : 0;
     const viewBoxWidth = width > 0 ? width : 0;
 
-    const xScale = scaleTime()
+    const xScaleTime = scaleTime()
         .domain([new Date(), new Date()])
         .range([0, viewBoxWidth - margins.left - margins.right]);
+    
+    xScaleTime.ticks(timeMonday.every(1));
+
+    const xScaleBand = scaleBand()
+        .domain([])
+        .range([0, viewBoxWidth - margins.left - margins.right]);
+
 
     const yScale = scaleLinear()
         .domain([0, 0])
@@ -32,14 +40,20 @@ const TimePlot = ({ data, width, height }: { data: DataPointRaw[]; width: number
 
     const renderAxes = () => {
         if (!svgRef.current) return;
-        if (!data || data.length === 0) return;
+
         const axes = select(svgRef.current).select(".axes");
         const xAxis = axes.select("g.x.axis");
-        const minDate = min(data, d => d.date);
+        const minDate = min(data, d => d.date) ;
 
-        xScale
-            .domain([minDate || new Date(), new Date()])
-            .range([0, viewBoxWidth - margins.left - margins.right]);
+        if (minDate) {
+            xScaleTime
+                .domain(timeMonday.range(new Date(minDate), new Date()))
+                .range([0, viewBoxWidth - margins.left - margins.right]);
+        } else {
+            xScaleTime
+                .domain(timeMonday.range(new Date(), new Date()))
+                .range([0, viewBoxWidth - margins.left - margins.right]);
+        }
 
         const yAxis = axes.select("g.y.axis");
 
@@ -53,7 +67,7 @@ const TimePlot = ({ data, width, height }: { data: DataPointRaw[]; width: number
         xAxis
             .transition()
             .duration(500)
-            .call(axisBottom(xScale));
+            .call(axisBottom(xScaleTime));
 
         yAxis
             .transition()
@@ -103,7 +117,7 @@ const TimePlot = ({ data, width, height }: { data: DataPointRaw[]; width: number
             .append("rect")
             .attr("fill", "steelblue") 
             .attr("data-value", (d => JSON.stringify(d)))
-            .attr("x", d => xScale(d[0])) 
+            .attr("x", d => xScaleBand(d[0])) 
             .attr("y", d => yScale(10))
             .attr("width", 10) // placeholder, will be updated in transition
             .attr("height", d => 10); // placeholder, will be updated in transition
@@ -117,7 +131,7 @@ const TimePlot = ({ data, width, height }: { data: DataPointRaw[]; width: number
     useEffect(() => {
         renderAxes();
         updateCanvas();
-    }, [data,xScale, yScale]);
+    }, [data, xScaleBand, yScale]);
 
     return (
         <svg
