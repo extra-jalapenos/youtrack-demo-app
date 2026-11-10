@@ -18,6 +18,8 @@ const margins = {top: 20, right: 20, bottom: 30, left: 40};
 
 const TimePlot = ({ data, width, height }: { data: DataPointRaw[]; width: number; height: number }) => {
     const svgRef = useRef<SVGSVGElement>(null);
+    const canvasWidth = width - margins.left - margins.right;
+    const canvasHeight = height - margins.top - margins.bottom;
     const [to, _setTo] = useState(new Date());
 
     const viewBoxHeight = height > 0 ? height : 0;
@@ -25,18 +27,18 @@ const TimePlot = ({ data, width, height }: { data: DataPointRaw[]; width: number
 
     const xScaleTime = scaleTime()
         .domain([new Date(), new Date()])
-        .range([0, viewBoxWidth - margins.left - margins.right]);
+        .range([0, canvasWidth]);
     
     xScaleTime.ticks(timeMonday.every(1));
 
     const xScaleBand = scaleBand()
         .domain([])
-        .range([0, viewBoxWidth - margins.left - margins.right]);
+        .range([0, canvasWidth]);
 
 
     const yScale = scaleLinear()
         .domain([0, 0])
-        .range([viewBoxHeight - margins.bottom - margins.top, 0]);
+        .range([canvasHeight, 0]);
 
     const renderAxes = () => {
         if (!svgRef.current) return;
@@ -48,11 +50,19 @@ const TimePlot = ({ data, width, height }: { data: DataPointRaw[]; width: number
         if (minDate) {
             xScaleTime
                 .domain(timeMonday.range(new Date(minDate), new Date()))
-                .range([0, viewBoxWidth - margins.left - margins.right]);
+                .range([0, canvasWidth]);
+            console.log(timeMonday.range(new Date(minDate), new Date()))
+            xScaleBand
+                .domain(timeMonday.range(new Date(minDate), new Date()))
+                .range([0, canvasWidth]);
         } else {
             xScaleTime
                 .domain(timeMonday.range(new Date(), new Date()))
-                .range([0, viewBoxWidth - margins.left - margins.right]);
+                .range([0, canvasWidth]);
+
+            xScaleBand
+                .domain(timeMonday.range(new Date(), new Date()))
+                .range([0, canvasWidth]);
         }
 
         const yAxis = axes.select("g.y.axis");
@@ -61,8 +71,9 @@ const TimePlot = ({ data, width, height }: { data: DataPointRaw[]; width: number
         const maxValueOnDate = max(sumPerDate.values());
 
         yScale
-            .domain([0, maxValueOnDate || 0])
-            .range([viewBoxHeight - margins.bottom, 0]);
+            .domain([0, maxValueOnDate * 1.1 || 0])
+            .range([canvasHeight, 0])
+            .nice();
             
         xAxis
             .transition()
@@ -85,7 +96,7 @@ const TimePlot = ({ data, width, height }: { data: DataPointRaw[]; width: number
         if (hasXAxis.empty()) {
             axes.append("g")
                 .attr("class", "x axis")
-                .attr("transform", `translate(${0}, ${viewBoxHeight - margins.bottom - margins.top})`);
+                .attr("transform", `translate(${0}, ${canvasHeight})`);
             console.log("x axis created");
         } else {
             console.log("x axis already exists");
@@ -109,7 +120,7 @@ const TimePlot = ({ data, width, height }: { data: DataPointRaw[]; width: number
         
         const sumPerDate = rollup(data,
             (D: DataPointRaw[]) => sum(D.map(d => d.duration.minutes)), 
-            (d: DataPointRaw) => new Date(d.date).setHours(0, 0, 0, 0)
+            (d: DataPointRaw) => timeDay.floor(new Date(d.date))
         );
         const rects = canvas.selectAll("rect")
             .data(sumPerDate)
@@ -117,10 +128,10 @@ const TimePlot = ({ data, width, height }: { data: DataPointRaw[]; width: number
             .append("rect")
             .attr("fill", "steelblue") 
             .attr("data-value", (d => JSON.stringify(d)))
-            .attr("x", d => xScaleBand(d[0])) 
-            .attr("y", d => yScale(10))
+            .attr("x", d => xScaleTime(d[0])) 
+            .attr("y", d => yScale(d[1]))
             .attr("width", 10) // placeholder, will be updated in transition
-            .attr("height", d => 10); // placeholder, will be updated in transition
+            .attr("height", d => yScale(0) - yScale(d[1])); // placeholder, will be updated in transition
     }
 
     useEffect(() => {
