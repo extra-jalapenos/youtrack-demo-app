@@ -9,9 +9,9 @@ import {EmbeddableWidgetAPI, HostAPI} from "../../../@types/globals";
 // const host: HostAPI = await YTApp.register();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-    <StrictMode>
-        <ControlsHeightContext.Provider value={ControlsHeight.S}>
-            <App />
-        </ControlsHeightContext.Provider>
-    </StrictMode>
+  <StrictMode>
+    <ControlsHeightContext.Provider value={ControlsHeight.S}>
+      <App/>
+    </ControlsHeightContext.Provider>
+  </StrictMode>
 );

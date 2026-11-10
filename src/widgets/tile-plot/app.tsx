@@ -54,7 +54,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
 
             setAuthors(authors);
             if (authors.length)
-                setSelectedPerson(YTApp.me.id);
+                {setSelectedPerson(YTApp.me.id);}
 
             setFetchedData(relevantData);
         } catch {
@@ -65,7 +65,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
             setFetchedData(relevantData);
             setAuthors(authors);
             if (authors.length)
-                setSelectedPerson(authors[0].id);
+                {setSelectedPerson(authors[0].id);}
             return
             host.alert('YTApp: could not request custom HTTP endpoint', 'error' as AlertType.ERROR)
         }
@@ -77,14 +77,14 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
 
     useEffect(() => {
         if (fetchedData.length === 0)
-            return
+            {return}
         const povData = evaluateFromPOV(selectedPerson, fetchedData, from, to, groupedByWeek ? "week" : "day");
         setTileChartData([...povData]);
     }, [fetchedData, selectedPerson, groupedByWeek]);
 
     useEffect(() => {
         if (fetchedData.length === 0)
-            return
+            {return}
         if (aggregation === "count") {
             const countsByCategory = getDayCountContributionCategories(tileChartData);
             setSummaryChartData(countsByCategory);
@@ -96,7 +96,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
     }, [tileChartData, aggregation, selectedPerson]);
 
     useEffect(() => {
-        if (!tilePlotRef.current) return;
+        if (!tilePlotRef.current) {return;}
 
         const resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
@@ -111,7 +111,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
 
 
     useEffect(() => {
-        if (!summaryPlotRef.current) return;
+        if (!summaryPlotRef.current) {return;}
 
         const resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
@@ -125,34 +125,34 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
     }, []);
 
     return (
-        <>
-            <section>
-                <ButtonToolbar>
-                    <ButtonGroup>
-                        {authors.map(author => {
+      <>
+        <section>
+          <ButtonToolbar>
+            <ButtonGroup>
+              {authors.map(author => {
                             return (
-                                <Button
-                                    key={author.id}
-                                    active={author.id === selectedPerson}
-                                    onClick={() => setSelectedPerson(author.id)}
-                                >
-                                    {author.name}
-                                </Button>
+                              <Button
+                                key={author.id}
+                                active={author.id === selectedPerson}
+                                onClick={() => setSelectedPerson(author.id)}
+                              >
+                                {author.name}
+                              </Button>
                             )
                         })}
-                    </ButtonGroup>
-                </ButtonToolbar>
-                <Button
-                    onClick={() => fetchWorkItems()}
-                >
-                    Refresh Data
-                </Button>
-            </section>
-            <section
-                className="component"
-                ref={tilePlotRef}
-            >
-                {/* <TilePlot
+            </ButtonGroup>
+          </ButtonToolbar>
+          <Button
+            onClick={() => fetchWorkItems()}
+          >
+            Refresh Data
+          </Button>
+        </section>
+        <section
+          className="component"
+          ref={tilePlotRef}
+        >
+          {/* <TilePlot
                     data={tileChartData}
                     viewBoxWidth={containerWidth}
                     width={containerWidth}
@@ -160,15 +160,13 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
                     height={containerHeight}
                     mode={groupedByWeek ? "week" : "day"}
                 /> */}
-                <TimePlot
-                    data={fetchedData}
-                    width={containerWidth}
-                    height={containerHeight}
-                >
-
-                </TimePlot>
-            </section>
-        </>
+          <TimePlot
+            data={fetchedData}
+            width={containerWidth}
+            height={containerHeight}
+          />
+        </section>
+      </>
     )
 };
 

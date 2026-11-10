@@ -47,7 +47,7 @@ export const calculateAverageOtherContribution = (
         .filter(([person]) => person !== excludePerson)
         .map(([, minutes]) => minutes);
 
-    if (otherPeople.length === 0) return 0;
+    if (otherPeople.length === 0) {return 0;}
     return otherPeople.reduce((sum, minutes) => sum + minutes, 0) / otherPeople.length;
 };
 
@@ -64,7 +64,7 @@ export const compareContributionToRest = ([personalContribution = 0, otherContri
     const total = personalContribution + otherContributions;
 
     // Undefined mathematically, but 0 is usually the most useful result.
-    if (total === 0) return .5;
+    if (total === 0) {return .5;}
 
 
     return personalContribution / total;

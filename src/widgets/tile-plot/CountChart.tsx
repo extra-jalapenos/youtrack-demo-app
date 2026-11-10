@@ -18,22 +18,22 @@ const CountChart = ({ data, width, height }: CountChartConfig) => {
     const viewBoxHeight = height > 0 ? height : 0;
     const viewBoxWidth = width > 0 ? width : 0;
 
-    let canvasWidth = viewBoxWidth - margin.left - margin.right;
-    let canvasHeight = viewBoxHeight - margin.top - margin.bottom;
+    const canvasWidth = viewBoxWidth - margin.left - margin.right;
+    const canvasHeight = viewBoxHeight - margin.top - margin.bottom;
 
-    let xScale = scaleBand()
+    const xScale = scaleBand()
         .domain(contributionLabelScale.range())
         .range([0, canvasWidth])
         .paddingInner(0.4)
         .paddingOuter(0.2);
 
-    let yScale = scaleLinear()
+    const yScale = scaleLinear()
         .domain([0, max(data, d => Math.max(d.value, d.benchmark) * (1+ 1/3)) || 100])
         .range([canvasHeight, 0])
         .nice();
 
     useEffect(() => {
-        if (!svgRef.current) return;
+        if (!svgRef.current) {return;}
         const svg = select(svgRef.current);
 
         const axes = svg.select(".axes")
@@ -171,18 +171,15 @@ const CountChart = ({ data, width, height }: CountChartConfig) => {
     }, [data]);
 
     if (data.length === 0)
-        return
+        {return}
 
     return(
-        <>
-            <svg
-                ref={svgRef}
-                viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
-                width={width}
-                height={height}
-            >
-            </svg>
-        </>
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
+        width={width}
+        height={height}
+      />
     )
 }
 

@@ -46,7 +46,7 @@ exports.httpHandler = {
         const workitems = [];
         foundIssues.forEach(issue => {
           if (issue.workItems.size === 0)
-            return;
+            {return;}
           issue.workItems.forEach(workitem => {
             workitems.push(workitem);
           });

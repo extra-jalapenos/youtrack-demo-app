@@ -36,7 +36,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
  */
 export const mockData = (startDate: Date, endDate: Date, authorNames: string[], amountOfWorklogs: number): DataPointRaw[] => {
     const authors: author[] = authorNames.map(createAuthor);
-    if (authors.length === 0 || amountOfWorklogs <= 0) return [];
+    if (authors.length === 0 || amountOfWorklogs <= 0) {return [];}
 
     const firstDay = new Date(startDate);
     firstDay.setHours(0, 0, 0, 0);

@@ -31,12 +31,12 @@ const TimePlot = ({
 
   // One effect builds the scales from the current data + size, then draws axes and bars with them.
   useEffect(() => {
-    if (!svgRef.current) return;
+    if (!svgRef.current) {return;}
 
     const canvasWidth = viewBoxWidth - margins.left - margins.right;
     const canvasHeight = viewBoxHeight - margins.top - margins.bottom;
     // not measured yet (or nothing to show): wait for the next width/height/data change
-    if (canvasWidth <= 0 || canvasHeight <= 0 || data.length === 0) return;
+    if (canvasWidth <= 0 || canvasHeight <= 0 || data.length === 0) {return;}
 
     const svg = select(svgRef.current);
 
@@ -133,8 +133,8 @@ const TimePlot = ({
         className="axes"
         transform={`translate(${margins.left}, ${margins.top})`}
       >
-        <g className="x axis" transform={`translate(0, ${canvasHeight})`} />
-        <g className="y axis" />
+        <g className="x axis" transform={`translate(0, ${canvasHeight})`}/>
+        <g className="y axis"/>
       </g>
       <g
         className="canvas"

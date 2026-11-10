@@ -22,19 +22,19 @@ const TileChart = ({ data, width, height, mode = "day" }: TileChartConfig) => {
     const viewBoxHeight = height > 0 ? height : 0;
     const viewBoxWidth = width > 0 ? width : 0;
 
-    let canvasWidth = viewBoxWidth - margin.left - margin.right;
-    let canvasHeight = viewBoxHeight - margin.top;
+    const canvasWidth = viewBoxWidth - margin.left - margin.right;
+    const canvasHeight = viewBoxHeight - margin.top;
 
     const lastMonday = timeMonday(new Date())
     const formatAsLocalWeekday = (d: Date) => d.toLocaleDateString([], { weekday: "short" })
     const weekdays = timeDays(lastMonday, timeDay.offset(lastMonday, 7)).map(d => formatAsLocalWeekday(d))
 
     if (mode === "week")
-        intensityScale.domain([0, 60 * 7])
+        {intensityScale.domain([0, 60 * 7])}
     else
-        intensityScale.domain([0, 60])
+        {intensityScale.domain([0, 60])}
 
-    let yScale = scaleBand()
+    const yScale = scaleBand()
         .domain(weekdays)
         .range([0, canvasHeight])
         .padding(0.2);
@@ -43,7 +43,7 @@ const TileChart = ({ data, width, height, mode = "day" }: TileChartConfig) => {
     const getWeekOffset = (date: Date) => timeMonday.count(timeMonday(date), to)
 
     useEffect(() => {
-        if (!svgRef.current) return;
+        if (!svgRef.current) {return;}
         const svg = select(svgRef.current);
 
         if (svg.select(".axes").empty()) {
@@ -111,15 +111,12 @@ const TileChart = ({ data, width, height, mode = "day" }: TileChartConfig) => {
     }
 
     return(
-        <>
-            <svg
-                ref={svgRef}
-                viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
-                width={width}
-                height={height}
-            >
-            </svg>
-        </>
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
+        width={width}
+        height={height}
+      />
     )
 }
 

@@ -41,9 +41,9 @@ const RadialChart = ({host, from, to, width, height}: RadialChartData) => {
     }, [from, to]);
 
     const allDays = d3.timeDay.range(from, to, 1)
-    const formatISOWeek = d3.timeFormat("W%V"),
-        formatWeekdayName = d3.timeFormat("%A"),
-        formatMonthName = d3.timeFormat("%B")
+    const formatISOWeek = d3.timeFormat("W%V");
+        const formatWeekdayName = d3.timeFormat("%A");
+        const formatMonthName = d3.timeFormat("%B")
 
     const preppedData = fetchedData.map((d: any) => {
         const customFields = d.issue.customFields;
@@ -97,7 +97,7 @@ const RadialChart = ({host, from, to, width, height}: RadialChartData) => {
     console.log(stackedValuesByCategoryAndSeries)
 
     return (
-        <div>Test</div>
+      <div>Test</div>
     )
 
     // const flattened = d3.map(stackedValuesByCategoryAndPerson, d => d[1]).flat()
