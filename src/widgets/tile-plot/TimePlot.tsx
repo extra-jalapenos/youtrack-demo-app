@@ -5,6 +5,7 @@ import { InternMap, max, rollup, sum, min } from "d3-array";
 import { select } from "d3-selection";
 import { scaleLinear, scaleTime } from "d3-scale";
 import { axisLeft, axisBottom } from "d3-axis";
+import { transition } from "d3";
 
 const processData = (data: DataPointRaw[]): InternMap<string, number> => {
     return rollup(data,
@@ -27,7 +28,7 @@ const TimePlot = ({ data, width, height }: { data: DataPointRaw[]; width: number
 
     const yScale = scaleLinear()
         .domain([0, 0])
-        .range([viewBoxHeight - margins.bottom, 0]);
+        .range([viewBoxHeight - margins.bottom - margins.top, 0]);
 
     const renderAxes = () => {
         if (!svgRef.current) return;
@@ -89,7 +90,8 @@ const TimePlot = ({ data, width, height }: { data: DataPointRaw[]; width: number
     const updateCanvas = () => {
         if (!svgRef.current) return;
         if (!data || data.length === 0) return;
-        const canvas = select(svgRef.current).select("#canvas");
+        const canvas = select(svgRef.current).select<SVGGElement>("#canvas");
+        const t = transition().duration(500);
         
         const sumPerDate = rollup(data,
             (D: DataPointRaw[]) => sum(D.map(d => d.duration.minutes)), 
