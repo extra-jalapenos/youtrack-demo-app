@@ -24,13 +24,16 @@ const TimePlot = ({
   data,
   width,
   height,
+  activeCategories,
 }: {
   data: TimeChartDataPoint[];
   width: number;
   height: number;
+  activeCategories: Set<string>;
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const previousDataRef = useRef<TimeChartDataPoint[] | null>(null);
+  const previousActiveRef = useRef<Set<string> | null>(null);
 
   const viewBoxHeight = height > 0 ? height : 0;
   const viewBoxWidth = width > 0 ? width : 0;
@@ -47,11 +50,13 @@ const TimePlot = ({
         return;
     }
 
-    // animate only when the data changed (and it is not the first paint);
+    // animate only when the data or category toggles changed (and it is not the first paint);
     // resizes must update instantly, otherwise every resize tick restarts all transitions
     const dataChanged = previousDataRef.current !== null && previousDataRef.current !== data;
+    const categoriesChanged = previousActiveRef.current !== null && previousActiveRef.current !== activeCategories;
     previousDataRef.current = data;
-    const duration = dataChanged ? TRANSITION_MS : 0;
+    previousActiveRef.current = activeCategories;
+    const duration = dataChanged || categoriesChanged ? TRANSITION_MS : 0;
 
     const svg = select(svgRef.current);
 
@@ -170,10 +175,12 @@ const TimePlot = ({
       .duration(duration)
       .attr("x", (d) => xScale(d.date.getTime()) ?? 0)
       .attr("width", xScale.bandwidth())
-      .attr("y", (d) => yScale(d.minutes))
-      .attr("height", (d) => yScale(0) - yScale(d.minutes))
+      .attr("y", (d) => (activeCategories.has(d.contributionCategory) ? yScale(d.minutes) : canvasHeight))
+      .attr("height", (d) =>
+        activeCategories.has(d.contributionCategory) ? yScale(0) - yScale(d.minutes) : 0,
+      )
       .attr("fill", (d) => colorScaleContributionLinear(d.contribution));
-  }, [data, viewBoxWidth, viewBoxHeight]);
+  }, [data, activeCategories, viewBoxWidth, viewBoxHeight]);
 
   const canvasHeight = viewBoxHeight - margins.top - margins.bottom;
 

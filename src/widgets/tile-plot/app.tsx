@@ -1,4 +1,4 @@
-import React, {memo, useEffect, useRef, useState} from 'react';
+import React, {memo, useEffect, useMemo, useRef, useState} from 'react';
 import * as d3 from "d3";
 import "./app.css"
 import type {HostAPI} from "../../../@types/globals";
@@ -14,7 +14,7 @@ import {
     calculateMinutesByDay,
     calculateMinutesByDayAndPersonId, getDayCountContributionCategories,
     evaluateFromPOV,
-    extractRelevantInfo, getAverageContributionPerCategory, addWeekAggregates
+    extractRelevantInfo, getAverageContributionPerCategory, addWeekAggregates, getCategorySummary
 } from "./processingData.ts";
 import ButtonGroup from "@jetbrains/ring-ui-built/components/button-group/button-group";
 import Button from "@jetbrains/ring-ui-built/components/button/button";
@@ -25,6 +25,7 @@ import Toggle, {Size} from "@jetbrains/ring-ui-built/components/toggle/toggle";
 import Text from "@jetbrains/ring-ui-built/components/text/text";
 import { mockData } from './mockData.ts';
 import TimePlot from './TimePlot.tsx';
+import CategoryFilterTable from './CategoryFilterTable.tsx';
 
 const AppComponent = ({ host }: { host: HostAPI }) => {
     const [loading, setLoading] = useState<boolean>(true);
@@ -42,6 +43,12 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
     const summaryPlotRef = useRef<HTMLDivElement|null>(null);
     const [tileChartData, setTileChartData] = useState<TileChartDataPoint[]>([])
     const [summaryChartData, setSummaryChartData] = useState<CountChartDataPoint[]>([])
+    const [activeCategories, setActiveCategories] = useState<Set<string>>(new Set());
+    const presentCategories = useMemo(
+        () => new Set(tileChartData.map(d => d.contributionCategory)),
+        [tileChartData]
+    );
+    const categorySummary = useMemo(() => getCategorySummary(tileChartData), [tileChartData]);
     const fetchWorkItems = async () => {
         try {
             const query = "Subtask of: TODO-380"
@@ -81,6 +88,23 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
         const povData = evaluateFromPOV(selectedPerson, fetchedData, from, to, groupedByWeek ? "week" : "day");
         setTileChartData([...povData]);
     }, [fetchedData, selectedPerson, groupedByWeek]);
+
+    // whenever the data changes (person, dates, grouping), all present categories start active
+    useEffect(() => {
+        setActiveCategories(new Set(presentCategories));
+    }, [presentCategories]);
+
+    const toggleCategory = (category: string) => {
+        setActiveCategories(prev => {
+            const next = new Set(prev);
+            if (next.has(category)) {
+                next.delete(category);
+            } else {
+                next.add(category);
+            }
+            return next;
+        });
+    };
 
     useEffect(() => {
         if (fetchedData.length === 0)
@@ -142,6 +166,11 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
                         })}
             </ButtonGroup>
           </ButtonToolbar>
+          <CategoryFilterTable
+            summary={categorySummary}
+            activeCategories={activeCategories}
+            onToggle={toggleCategory}
+          />
           <Button
             onClick={() => fetchWorkItems()}
           >
@@ -164,6 +193,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
             data={tileChartData}
             width={containerWidth}
             height={containerHeight}
+            activeCategories={activeCategories}
           />
         </section>
       </>

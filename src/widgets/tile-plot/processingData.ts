@@ -170,6 +170,22 @@ export const getAverageContributionPerCategory = (evaluatedDataPoints: TileChart
     })
 }
 
+export type CategorySummary = { label: string; days: number; ownMinutes: number };
+
+// per category: number of days with any work (by anybody) and the perspective person's own minutes on those days
+export const getCategorySummary = (evaluatedDataPoints: TileChartDataPoint[]): CategorySummary[] => {
+    const workedDays = evaluatedDataPoints.filter(d => d.totalMinutes)
+    const byLabel = rollup(workedDays,
+        D => ({ days: D.length, ownMinutes: sum(D, d => d.minutes) }),
+        d => d.contributionCategory
+    )
+
+    return contributionLabels.en.map((label: string) => {
+        const entry = byLabel.get(label)
+        return { label, days: entry?.days ?? 0, ownMinutes: entry?.ownMinutes ?? 0 }
+    })
+}
+
 export const getDayCountContributionCategories = (evaluatedDataPoints: TileChartDataPoint[]): CountChartDataPoint[] => {
     const allNonZeroDays = evaluatedDataPoints.filter(d => d.totalMinutes)
     // to get the average contribution of e.g. "little" we have to look at avg minutes on category "most" for perspective Person!
