@@ -1,30 +1,27 @@
 import React, {memo, useEffect, useMemo, useRef, useState} from 'react';
-import * as d3 from "d3";
+import {
+    timeDay,
+    timeMonday,
+    timeMonth
+} from "d3-time"
 import type {HostAPI} from "../../../@types/globals";
 import "@jetbrains/ring-ui-built/components/style.css";
 import "./app.css"
 import {sub} from "date-fns"
 import {ControlsHeight, ControlsHeightContext} from '@jetbrains/ring-ui-built/components/global/controls-height';
-import Heading from "@jetbrains/ring-ui-built/components/heading/heading";
-import Loader from "@jetbrains/ring-ui-built/components/loader/loader";
-import type {AlertType} from "@jetbrains/ring-ui-built/components/alert/alert";
 import {extractAllPeople} from "./utils/dataService.ts";
 import {
-    calculateMinutesByDay,
-    calculateMinutesByDayAndPersonId, getDayCountContributionCategories,
     evaluateFromPOV,
-    extractRelevantInfo, getAverageContributionPerCategory, addWeekAggregates, getCategorySummary
+    extractRelevantInfo,
+    getCategorySummary
 } from "./utils/processingData.ts";
 import ButtonGroup from "@jetbrains/ring-ui-built/components/button-group/button-group";
 import Button from "@jetbrains/ring-ui-built/components/button/button";
-import {author, extractedDataPointsPoint, ExtractedDataPoint, ChartDataPoint } from "./utils/types.d.ts";
+import {author, ExtractedDataPoint, ChartDataPoint } from "./utils/types.d.ts";
 import ButtonToolbar from "@jetbrains/ring-ui-built/components/button-toolbar/button-toolbar";
-import Toggle, {Size} from "@jetbrains/ring-ui-built/components/toggle/toggle";
-import Text from "@jetbrains/ring-ui-built/components/text/text";
-import { mockData } from './utils/mockData.ts';
 import TimePlot from './components/TimePlot.tsx';
 import CategoryFilterTable from './components/CategoryFilterTable.tsx';
-import { fetchWorkItems, YTAppPresent } from './utils/fetching.ts';
+import { fetchWorkItems } from './utils/fetching.ts';
 
 const AppComponent = ({ host }: { host: HostAPI }) => {
     const [loading, setLoading] = useState<boolean>(true);
@@ -32,9 +29,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
     const [extractedDataPoints, setExtractedDataPoints] = useState<ExtractedDataPoint[]>([]);
     const [selectedPerson, setSelectedPerson] = useState<string>("");
 
-    const [aggregation, setAggregation] = useState<string>("count");
     const [authors, setAuthors] = useState<author[]>([]);
-    const [groupedByWeek, setGroupedByWeek] = useState<boolean>(false);
     const [from, setFrom] = useState(sub(new Date(), { months: 3, weeks: 5 }));
     const [to, setTo] = useState((new Date()));
     const [containerWidth, setContainerWidth] = useState(0);
@@ -72,9 +67,10 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
         if (extractedDataPoints.length === 0) {
             return
         };
-        const povData = evaluateFromPOV(selectedPerson, extractedDataPoints, from, to, groupedByWeek ? "week" : "day");
+        const groupingFunction = (d: ExtractedDataPoint) => timeDay(d.date)
+        const povData = evaluateFromPOV(selectedPerson, extractedDataPoints, from, to, groupingFunction);
         setChartData([...povData]);
-    }, [extractedDataPoints, selectedPerson, groupedByWeek]);
+    }, [extractedDataPoints, selectedPerson]);
 
     // whenever the data changes (person, dates, grouping), all present categories start active
     useEffect(() => {

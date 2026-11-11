@@ -4,11 +4,11 @@ import { ChartDataPoint } from "../utils/types.d.ts";
 
 import { colorScaleContributionLinear } from "../utils/colorScales.ts";
 
-import { max } from "d3-array";
+import { max, union } from "d3-array";
 import { select } from "d3-selection";
 import { scaleBand, scaleLinear } from "d3-scale";
 import { axisLeft, axisBottom } from "d3-axis";
-import { timeDay } from "d3-time";
+import { timeDay, timeMonday } from "d3-time";
 import "d3-transition";
 
 const margins = { top: 20, right: 20, bottom: 30, left: 40 };
@@ -56,15 +56,15 @@ const TimePlot = ({
     const categoriesChanged = previousActiveRef.current !== null && previousActiveRef.current !== activeCategories;
     previousDataRef.current = data;
     previousActiveRef.current = activeCategories;
+
     const duration = dataChanged || categoriesChanged ? TRANSITION_MS : 0;
 
     const svg = select(svgRef.current);
 
     // x: one band per day from the first day with data until now
     const minDate = data[0].date;
-    const days = timeDay
-      .range(timeDay.floor(minDate), new Date())
-      .map((d) => +d);
+    const days: Date[] = timeDay
+      .range(timeDay.floor(minDate), new Date());
 
     const xScale = scaleBand<number>()
       .domain(days)
@@ -85,13 +85,14 @@ const TimePlot = ({
       (_, i) => (days.length - 1 - i) % tickEvery === 0,
     );
 
+    const tickValues: Set<Date> = union(days.map((d: Date) => timeMonday(d)))
     svg
       .select<SVGGElement>(".x.axis")
       .transition()
       .duration(duration)
       .call(
         axisBottom(xScale)
-          .tickValues(visibleTicks)
+          .tickValues(tickValues.values())
           .tickFormat((d) => formatWeekTick(+d)),
       );
 

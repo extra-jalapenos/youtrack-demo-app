@@ -15,21 +15,19 @@ export const changeOpacity = (colorString: string, opacity: number): string => {
 
 export const contributionLabels = {
     "en": [
-        "nothing",
         "little",
         "less",
         "average",
         "more",
-        "most",
-        "everything"
+        "most"
     ]
 }
 
 const constructContributionLabelScale = (labels: string[]) => {
     // without borders
-    const bandCount = labels.length - 2;
+    const bandCount = labels.length;
     const thresholds: number[] = Array(bandCount+1).fill(0).map((_, idx) => (idx / bandCount) * (.98) + 0.01);
-    return scaleThreshold([...thresholds, 1], labels);
+    return scaleThreshold([...thresholds], labels);
 }
 
 export const contributionLabelScale = constructContributionLabelScale(contributionLabels.en)
