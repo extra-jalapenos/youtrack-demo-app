@@ -1,6 +1,6 @@
 import {color, InternMap, scaleBand, scaleDiverging, scaleLinear, scaleThreshold, zip} from "d3";
-
-export const colorScaleContributionLinear = scaleDiverging(["#ff1f6b", "#d15bff", "#0065ff"]);
+export const colorScaleContributionLinear = scaleDiverging(["#ff1f6b", "#ffef5b", "#008d4b"]);
+// export const colorScaleContributionLinear = scaleDiverging(["#ff1f6b", "#e45bff", "#0065ff"]);
 export const intensityScale = scaleLinear().domain([0, 60]).range([0, 1]);
 
 export const changeOpacity = (colorString: string, opacity: number): string => {

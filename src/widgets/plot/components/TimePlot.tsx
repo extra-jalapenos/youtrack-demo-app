@@ -76,15 +76,6 @@ const TimePlot = ({
       .range([canvasHeight, 0])
       .nice();
 
-    // axes
-    const tickEvery = Math.max(
-      1,
-      Math.ceil(MIN_TICK_SPACING_PX / xScale.step()),
-    );
-    const visibleTicks = days.filter(
-      (_, i) => (days.length - 1 - i) % tickEvery === 0,
-    );
-
     const tickValues: Set<Date> = union(days.map((d: Date) => timeMonday(d)))
     svg
       .select<SVGGElement>(".x.axis")
