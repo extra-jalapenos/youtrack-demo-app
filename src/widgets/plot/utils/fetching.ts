@@ -17,7 +17,7 @@ export const fetchWorkItems = async (from: Date, to: Date, query: string) => {
             const responseYoutrack: any = await host.fetchYouTrack(`workItems?startDate=${startDate}&endDate=${endDate}&fields=${fields}&query=${query}`);
             return responseYoutrack;
         } catch (error) {
-            return mockData(from, to, ["Alice", "Bob", "Charlie"], 500)
+            return mockData(from, to, ["Alice", "Bob", "Charlie"], 200)
             // host.alert('YTApp: could not request custom HTTP endpoint', 'error' as AlertType.ERROR)
         }
     }

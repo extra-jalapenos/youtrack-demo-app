@@ -44,9 +44,9 @@ g.axes  text {
   font-size: var(--ring-font-size-smaller);
 }
 
-svg.canvas rect[data-total-minutes="0"] {
-  fill: currentColor;
-  opacity: 0.05;
+svg.canvas rect.total-minutes {
+  stroke-width: 20;
+
 }
 
 g.grid line {
@@ -56,8 +56,7 @@ g.grid line {
 
 .total-minutes {
   font-size: var(--ring-font-size-smaller);
-  fill: currentColor;
-  opacity: 0.25;
+  opacity: 0.2;
 }
 
 .benchmark {

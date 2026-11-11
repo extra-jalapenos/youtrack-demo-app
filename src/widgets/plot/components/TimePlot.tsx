@@ -2,7 +2,7 @@
 import { useRef, useEffect } from "react";
 import { ChartDataPoint } from "../utils/types.d.ts";
 
-import { colorScaleContributionLinear } from "../utils/colorScales.ts";
+import { colorScaleContributionCategorical, colorScaleContributionLinear } from "../utils/colorScales.ts";
 
 import { max, union } from "d3-array";
 import { select } from "d3-selection";
@@ -10,15 +10,15 @@ import { scaleBand, scaleLinear } from "d3-scale";
 import { axisLeft, axisBottom } from "d3-axis";
 import { timeDay, timeMonday } from "d3-time";
 import "d3-transition";
+import { easeBounce, easeBounceIn, easeElastic } from "d3";
 
 const margins = { top: 20, right: 20, bottom: 30, left: 40 };
 const TRANSITION_MS = 500;
 const MIN_TICK_SPACING_PX = 48;
 
 const formatWeekTick = (ms: number) =>
-  new Date(ms).toLocaleDateString([], { day: "numeric", month: "short" });
+  new Date(ms).toLocaleDateString([], { day: "2-digit", month: "short" });
 
-const keyByDate = (d: ChartDataPoint) => d.date.getTime();
 
 const TimePlot = ({
   data,
@@ -98,7 +98,7 @@ const TimePlot = ({
     // bars, keyed by day so changed data updates in place instead of appending duplicates
     canvas
       .selectAll<SVGRectElement, ChartDataPoint>("rect.total-minutes")
-      .data(data, keyByDate)
+      .data(data, d => d.date)
       .join(
         (enter) => {
             const rects = enter
@@ -107,7 +107,9 @@ const TimePlot = ({
                 .attr("x", (d) => xScale(d.date.getTime()) ?? 0)
                 .attr("width", xScale.bandwidth())
                 .attr("y", canvasHeight)
-                .attr("height", 0);
+                .attr("height", 0)
+                .attr("fill", "lightblue")
+                .attr("opacity", (d) => 0.2);
             rects.append("title");
             return rects;
         },
@@ -135,7 +137,7 @@ const TimePlot = ({
 
     canvas
       .selectAll<SVGRectElement, ChartDataPoint>("rect.own-contribution")
-      .data(data, keyByDate)
+      .data(data, d => d.date)
       .join(
         (enter) => {
             const rects = enter
@@ -144,17 +146,21 @@ const TimePlot = ({
                 .attr("x", (d) => xScale(d.date.getTime()) ?? 0)
                 .attr("width", xScale.bandwidth())
                 .attr("y", canvasHeight)
-                .attr("height", 0);
+                .attr("height", 0)
             rects.append("title");
             return rects;
         },
-        (update) => update,
+        (update) => {
+          console.log(update)
+          return update
+        },
         (exit) =>
             exit
                 .transition()
                 .duration(duration)
-                .attr("y", canvasHeight)
-                .attr("height", 0)
+                .attr("fill", "black")
+                .transition()
+                .delay(200)
                 .remove(),
       )
       .attr("data-value", (d) => d.contribution)
@@ -163,15 +169,19 @@ const TimePlot = ({
           .select("title")
           .text((d) => `${d.date.toLocaleDateString()}: ${d.minutes} minutes`),
       )
-      .transition()
-      .duration(duration)
       .attr("x", (d) => xScale(d.date.getTime()) ?? 0)
       .attr("width", xScale.bandwidth())
+      .transition()
+      .duration(duration / 2)
+      .attr("fill", (d) => colorScaleContributionCategorical(d.contribution))
+      .transition()
+      .duration(duration)
       .attr("y", (d) => (activeCategories.has(d.contributionCategory) ? yScale(d.minutes) : canvasHeight))
+      .attr("opacity", (d) => activeCategories.has(d.contributionCategory))
       .attr("height", (d) =>
         activeCategories.has(d.contributionCategory) ? yScale(0) - yScale(d.minutes) : 0,
       )
-      .attr("fill", (d) => colorScaleContributionLinear(d.contribution));
+      ;
   }, [data, activeCategories, viewBoxWidth, viewBoxHeight]);
 
   const canvasHeight = viewBoxHeight - margins.top - margins.bottom;
