@@ -17,9 +17,9 @@ src/
 ├── widgets/
 │   └── plot/          # Primary widget: Contributions over Time (worklog visualization)
 │       ├── app.tsx         # Main React component
-│       ├── TilePlot.tsx    # D3 visualization of worklogs as a Git-style heatmap
+│       ├── Plot.tsx    # D3 visualization of worklogs as a Git-style heatmap
 │       ├── RadialChart.tsx # WIP radial chart visualization (mostly commented out)
-│       ├── types.ts        # TypeScript types for YouTrack data
+│       ├── types.d.ts        # TypeScript types for YouTrack data
 │       ├── helper.ts       # Utility functions
 │       ├── index.tsx       # Entry point (registers widget with YouTrack)
 │       ├── index.html      # Widget HTML shell
@@ -32,8 +32,8 @@ src/
 Each widget follows this pattern:
 1. **index.html** — Minimal HTML shell that loads the React entry point
 2. **index.tsx** — Mounts React app and calls `YTApp.register()` to connect to YouTrack's Host API
-3. **app.tsx** — Wraps the core component (TilePlot, RadialChart, etc.) and manages YouTrack integration
-4. **Component file** (e.g., TilePlot.tsx) — Contains the actual visualization logic
+3. **app.tsx** — Wraps the core component (Plot, RadialChart, etc.) and manages YouTrack integration
+4. **Component file** (e.g., Plot.tsx) — Contains the actual visualization logic
 
 ### Key Architectural Patterns
 
@@ -57,7 +57,7 @@ const response = await host.fetchYouTrack('workItems', {
 - D3 code runs in useEffect callbacks that re-render when dependencies change
 - No React-D3 wrapper library (raw D3 integration)
 
-#### Data Flow in TilePlot
+#### Data Flow in Plot
 1. Fetch worklogs from YouTrack via Host API (`useEffect` on date range)
 2. Filter/transform raw data into visualization format (group by week/day)
 3. Process data for rendering: rollup by date and perspective person
@@ -106,10 +106,10 @@ const response = await host.fetchYouTrack('workItems', {
 - Linting must pass before build: `npm run lint --fix` to auto-correct
 
 ### Updating Data Queries
-- Worklog queries are in TilePlot.tsx (line ~72)
+- Worklog queries are in Plot.tsx (line ~72)
 - Query shape: fields string specifies which YouTrack API fields to fetch
 - Modify the fields string to add/remove data (e.g., `issue(customFields(...))`)
-- Response type should match or extend `DataPointRaw` (types.ts)
+- Response type should match or extend `FetchedDataPoint` (types.d.ts)
 
 ## Notes for Future Work
 

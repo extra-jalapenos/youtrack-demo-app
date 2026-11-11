@@ -1,9 +1,9 @@
-import {CountChartDataPoint, DataPointRaw, ExtractedDataPoint, TileChartDataPoint} from "./types.ts";
-import {count, InternMap, median, rollup, sum, timeDay, union, timeMonday} from "d3";
+import {FetchedDataPoint, ExtractedDataPoint, ChartDataPoint} from "./types.d.ts";
+import {InternMap, median, rollup, sum, timeDay, union, timeMonday} from "d3";
 import {calculateAverageOtherContribution, compareContributionToRest, getEmptyMap} from "./helper.ts";
 import {contributionLabels, contributionLabelScale} from "./colorScales.ts";
 
-export const extractRelevantInfo = (fetchedData: DataPointRaw[]): ExtractedDataPoint[] => fetchedData.map(d => {
+export const extractRelevantInfo = (fetchedData: FetchedDataPoint[]): ExtractedDataPoint[] => fetchedData.map(d => {
     const date = timeDay.floor(new Date(d.date));
     return {
         authorId: d.author.id,
@@ -44,7 +44,6 @@ export const calculateMinutesByDayAndPersonId = (extractedDataPoints: ExtractedD
     )
 }
 
-
 export const calculateMinutesByWeekAndPersonId = (extractedDataPoints: ExtractedDataPoint[]): InternMap<Date, InternMap<string, number>> => {
     return rollup(extractedDataPoints,
         D => sum(D, d => d.minutes),
@@ -57,7 +56,7 @@ export const evaluateFromPOV = (authorId: string,
                                 extractedDataPoints: ExtractedDataPoint[],
                                 from: Date,
                                 to: Date,
-                                by: "day" | "week" = "day"): TileChartDataPoint[] => {
+                                by: "day" | "week" = "day"): ChartDataPoint[] => {
     const calculateMinutesByTimeframe = () => {
         if (by === "day") {
             return calculateMinutesByDay(extractedDataPoints);
@@ -110,7 +109,7 @@ export const evaluateFromPOV = (authorId: string,
     return fillDates
 }
 
-export const addWeekAggregates = (dayPoints: TileChartDataPoint[]): TileChartDataPoint[] => {
+export const addWeekAggregates = (dayPoints: ChartDataPoint[]): ChartDataPoint[] => {
     const minutesByWeek = rollup(dayPoints,
         D => {
             return {
@@ -122,7 +121,7 @@ export const addWeekAggregates = (dayPoints: TileChartDataPoint[]): TileChartDat
         d => timeMonday(d.date).getTime()
     )
 
-    const weekAggregates: TileChartDataPoint[] = Array.from(minutesByWeek.entries()).map(([weekTimestamp, { totalMinutes, minutes, avgMinutes }]) => {
+    const weekAggregates: ChartDataPoint[] = Array.from(minutesByWeek.entries()).map(([weekTimestamp, { totalMinutes, minutes, avgMinutes }]) => {
         const weekDate = new Date(weekTimestamp);
         const contribution = compareContributionToRest([minutes, avgMinutes])
 
@@ -140,7 +139,7 @@ export const addWeekAggregates = (dayPoints: TileChartDataPoint[]): TileChartDat
     return [...dayPoints, ...weekAggregates]
 }
 
-export const getAverageContributionPerCategory = (evaluatedDataPoints: TileChartDataPoint[]): CountChartDataPoint[] => {
+export const getAverageContributionPerCategory = (evaluatedDataPoints: ChartDataPoint[]): CountChartDataPoint[] => {
     // to get the average contribution of e.g. "little" we have to look at avg minutes on category "most" for perspective Person!
     const averageContributionByLabel = rollup(evaluatedDataPoints,
         D => {
@@ -173,7 +172,7 @@ export const getAverageContributionPerCategory = (evaluatedDataPoints: TileChart
 export type CategorySummary = { label: string; days: number; ownMinutes: number };
 
 // per category: number of days with any work (by anybody) and the perspective person's own minutes on those days
-export const getCategorySummary = (evaluatedDataPoints: TileChartDataPoint[]): CategorySummary[] => {
+export const getCategorySummary = (evaluatedDataPoints: ChartDataPoint[]): CategorySummary[] => {
     const workedDays = evaluatedDataPoints.filter(d => d.totalMinutes)
     const byLabel = rollup(workedDays,
         D => ({ days: D.length, ownMinutes: sum(D, d => d.minutes) }),
@@ -186,7 +185,7 @@ export const getCategorySummary = (evaluatedDataPoints: TileChartDataPoint[]): C
     })
 }
 
-export const getDayCountContributionCategories = (evaluatedDataPoints: TileChartDataPoint[]): CountChartDataPoint[] => {
+export const getDayCountContributionCategories = (evaluatedDataPoints: ChartDataPoint[]): CountChartDataPoint[] => {
     const allNonZeroDays = evaluatedDataPoints.filter(d => d.totalMinutes)
     // to get the average contribution of e.g. "little" we have to look at avg minutes on category "most" for perspective Person!
     const otherContributionByLabel = rollup(allNonZeroDays,

@@ -1,11 +1,11 @@
 import {
-    author, DataPointRaw,
+    author, FetchedDataPoint,
     ExtractedDataPoint
-} from "./types.ts";
+} from "./types.d.ts";
 
 import {indexes, map, rollup, union} from "d3";
 
-export const extractAllPeople = (fetchedData: DataPointRaw[]): author[] => {
+export const extractAllPeople = (fetchedData: FetchedDataPoint[]): author[] => {
     const lookup = rollup(fetchedData, D => D[0].author, d => d.author.id);
     return Array.from(lookup.values());
 };

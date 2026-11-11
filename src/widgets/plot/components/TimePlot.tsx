@@ -1,8 +1,8 @@
 // we only feed raw data into the component.
 import { useRef, useEffect } from "react";
-import { TimeChartDataPoint } from "./types.ts";
+import { ChartDataPoint } from "../utils/types.d.ts";
 
-import { colorScaleContributionLinear } from "./colorScales.ts";
+import { colorScaleContributionLinear } from "../utils/colorScales.ts";
 
 import { max } from "d3-array";
 import { select } from "d3-selection";
@@ -18,7 +18,7 @@ const MIN_TICK_SPACING_PX = 48;
 const formatWeekTick = (ms: number) =>
   new Date(ms).toLocaleDateString([], { day: "numeric", month: "short" });
 
-const keyByDate = (d: TimeChartDataPoint) => d.date.getTime();
+const keyByDate = (d: ChartDataPoint) => d.date.getTime();
 
 const TimePlot = ({
   data,
@@ -26,13 +26,13 @@ const TimePlot = ({
   height,
   activeCategories,
 }: {
-  data: TimeChartDataPoint[];
+  data: ChartDataPoint[];
   width: number;
   height: number;
   activeCategories: Set<string>;
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const previousDataRef = useRef<TimeChartDataPoint[] | null>(null);
+  const previousDataRef = useRef<ChartDataPoint[] | null>(null);
   const previousActiveRef = useRef<Set<string> | null>(null);
 
   const viewBoxHeight = height > 0 ? height : 0;
@@ -105,7 +105,7 @@ const TimePlot = ({
 
     // bars, keyed by day so changed data updates in place instead of appending duplicates
     canvas
-      .selectAll<SVGRectElement, TimeChartDataPoint>("rect.total-minutes")
+      .selectAll<SVGRectElement, ChartDataPoint>("rect.total-minutes")
       .data(data, keyByDate)
       .join(
         (enter) => {
@@ -142,7 +142,7 @@ const TimePlot = ({
       .attr("height", (d) => canvasHeight - yScale(d.totalMinutes));
 
     canvas
-      .selectAll<SVGRectElement, TimeChartDataPoint>("rect.own-contribution")
+      .selectAll<SVGRectElement, ChartDataPoint>("rect.own-contribution")
       .data(data, keyByDate)
       .join(
         (enter) => {

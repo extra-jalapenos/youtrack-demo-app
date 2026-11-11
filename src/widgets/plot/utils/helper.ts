@@ -9,7 +9,7 @@ import {
     scaleDiverging,
     range, scaleQuantize, interpolateArray, interpolateBasis
 } from "d3"
-import {TileChartDataPoint} from "./types.ts";
+import {ChartDataPoint} from "./types.d.ts";
 import {formatDuration} from "date-fns/formatDuration";
 import {contributionLabelScale} from "./colorScales.ts";
 
@@ -25,7 +25,7 @@ export const getMondays = (from: Date, to: Date) => {
     return union([timeMonday.floor(from), ...timeMondays(from, to, 1), timeDay.floor(to)])
 }
 
-export const describeDataPoint = (d: TileChartDataPoint) => {
+export const describeDataPoint = (d: ChartDataPoint) => {
     const dateString = `${d.date.toLocaleDateString([], { day: "numeric", month: "short", year: "numeric", weekday: "short" })}`
     if (d.totalMinutes === 0) {
         return `${dateString}\nno work done by anybody`

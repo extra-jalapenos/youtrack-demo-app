@@ -16,12 +16,12 @@
   "youTrackApiAllowedEndpoints": [],
   "widgets": [
     {
-      "key": "tile-chart",
-      "name": "Contributions over Time",
+      "key": "chart",
+      "name": "My Chart",
       "indexPath": "plot/index.html",
       "extensionPoint": "DASHBOARD_WIDGET",
       "iconPath": "plot/widget-icon.svg",
-      "description": "A Git-style visualization of worklogs per day."
+      "description": ""
     }
   ]
 }

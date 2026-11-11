@@ -1,4 +1,4 @@
-import {author, DataPointRaw} from "./types.ts";
+import {author, FetchedDataPoint} from "./types.d.ts";
 
 const ULID_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
@@ -30,11 +30,11 @@ const createAuthor = (name: string): author => ({
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
- * Generates `amountOfWorklogs` mock worklog items (DataPointRaw[]) spread randomly
+ * Generates `amountOfWorklogs` mock worklog items (FetchedDataPoint[]) spread randomly
  * across the days from startDate to endDate (inclusive).
  * Each author name maps to exactly one author object, reused across all generated items.
  */
-export const mockData = (startDate: Date, endDate: Date, authorNames: string[], amountOfWorklogs: number): DataPointRaw[] => {
+export const mockData = (startDate: Date, endDate: Date, authorNames: string[], amountOfWorklogs: number): FetchedDataPoint[] => {
     const authors: author[] = authorNames.map(createAuthor);
     if (authors.length === 0 || amountOfWorklogs <= 0) {return [];}
 
@@ -44,7 +44,7 @@ export const mockData = (startDate: Date, endDate: Date, authorNames: string[], 
     lastDay.setHours(0, 0, 0, 0);
     const dayCount = Math.max(1, Math.round((lastDay.getTime() - firstDay.getTime()) / MS_PER_DAY) + 1);
 
-    const fetchedDatapoints: DataPointRaw[] = Array(amountOfWorklogs).fill(null).map(() => {
+    const fetchedDatapoints: FetchedDataPoint[] = Array(amountOfWorklogs).fill(null).map(() => {
         const authorObject = authors[randomInt(0, authors.length - 1)];
 
         const date = new Date(firstDay);

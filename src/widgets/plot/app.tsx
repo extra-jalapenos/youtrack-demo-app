@@ -1,93 +1,80 @@
 import React, {memo, useEffect, useMemo, useRef, useState} from 'react';
 import * as d3 from "d3";
-import "./app.css"
 import type {HostAPI} from "../../../@types/globals";
 import "@jetbrains/ring-ui-built/components/style.css";
+import "./app.css"
 import {sub} from "date-fns"
-import TilePlot from "./TilePlot.tsx";
 import {ControlsHeight, ControlsHeightContext} from '@jetbrains/ring-ui-built/components/global/controls-height';
 import Heading from "@jetbrains/ring-ui-built/components/heading/heading";
 import Loader from "@jetbrains/ring-ui-built/components/loader/loader";
 import type {AlertType} from "@jetbrains/ring-ui-built/components/alert/alert";
-import {extractAllPeople} from "./dataService.ts";
+import {extractAllPeople} from "./utils/dataService.ts";
 import {
     calculateMinutesByDay,
     calculateMinutesByDayAndPersonId, getDayCountContributionCategories,
     evaluateFromPOV,
     extractRelevantInfo, getAverageContributionPerCategory, addWeekAggregates, getCategorySummary
-} from "./processingData.ts";
+} from "./utils/processingData.ts";
 import ButtonGroup from "@jetbrains/ring-ui-built/components/button-group/button-group";
 import Button from "@jetbrains/ring-ui-built/components/button/button";
-import {author, CountChartDataPoint, DataPointRaw, ExtractedDataPoint, TileChartDataPoint} from "./types.ts";
-import CountChart from "./CountChart.tsx";
+import {author, extractedDataPointsPoint, ExtractedDataPoint, ChartDataPoint } from "./utils/types.d.ts";
 import ButtonToolbar from "@jetbrains/ring-ui-built/components/button-toolbar/button-toolbar";
 import Toggle, {Size} from "@jetbrains/ring-ui-built/components/toggle/toggle";
 import Text from "@jetbrains/ring-ui-built/components/text/text";
-import { mockData } from './mockData.ts';
-import TimePlot from './TimePlot.tsx';
-import CategoryFilterTable from './CategoryFilterTable.tsx';
+import { mockData } from './utils/mockData.ts';
+import TimePlot from './components/TimePlot.tsx';
+import CategoryFilterTable from './components/CategoryFilterTable.tsx';
+import { fetchWorkItems, YTAppPresent } from './utils/fetching.ts';
 
 const AppComponent = ({ host }: { host: HostAPI }) => {
     const [loading, setLoading] = useState<boolean>(true);
     const [isConfiguring, setIsConfiguring] = useState(false);
-    const [aggregation, setAggregation] = useState<string>("count");
-    const [fetchedData, setFetchedData] = useState<ExtractedDataPoint[]>([]);
-    const [authors, setAuthors] = useState<author[]>([]);
+    const [extractedDataPoints, setExtractedDataPoints] = useState<ExtractedDataPoint[]>([]);
     const [selectedPerson, setSelectedPerson] = useState<string>("");
+
+    const [aggregation, setAggregation] = useState<string>("count");
+    const [authors, setAuthors] = useState<author[]>([]);
     const [groupedByWeek, setGroupedByWeek] = useState<boolean>(false);
     const [from, setFrom] = useState(sub(new Date(), { months: 3, weeks: 5 }));
     const [to, setTo] = useState((new Date()));
     const [containerWidth, setContainerWidth] = useState(0);
     const [containerHeight, setContainerHeight] = useState(0);
-    const tilePlotRef = useRef<HTMLDivElement|null>(null);
+    const plotRef = useRef<HTMLDivElement|null>(null);
     const summaryPlotRef = useRef<HTMLDivElement|null>(null);
-    const [tileChartData, setTileChartData] = useState<TileChartDataPoint[]>([])
-    const [summaryChartData, setSummaryChartData] = useState<CountChartDataPoint[]>([])
+    
+    const [ChartData, setChartData] = useState<ChartDataPoint[]>([])
     const [activeCategories, setActiveCategories] = useState<Set<string>>(new Set());
     const presentCategories = useMemo(
-        () => new Set(tileChartData.map(d => d.contributionCategory)),
-        [tileChartData]
+        () => new Set(ChartData.map(d => d.contributionCategory)),
+        [ChartData]
     );
-    const categorySummary = useMemo(() => getCategorySummary(tileChartData), [tileChartData]);
-    const fetchWorkItems = async () => {
-        try {
-            const query = "Subtask of: TODO-380"
-            const fields = "id,author(id,name,login),duration(minutes),date,text,issue(id,customFields(id,name,value(id,name)))"
-            const startDate = from.toISOString().split("T")[0];
-            const endDate = to.toISOString().split("T")[0];
-            const responseYoutrack: any = await host.fetchYouTrack(`workItems?startDate=${startDate}&endDate=${endDate}&fields=${fields}&query=${query}`);
-            const relevantData = extractRelevantInfo(responseYoutrack);
-            const authors = extractAllPeople(responseYoutrack);
 
-            setAuthors(authors);
-            if (authors.length)
-                {setSelectedPerson(YTApp.me.id);}
+    const categorySummary = useMemo(() => getCategorySummary(ChartData), [ChartData]);
 
-            setFetchedData(relevantData);
-        } catch {
-            const mockDataPoints = mockData(from, to, ["Alice", "Bob", "Charlie", "David"], 500);
-            const relevantData = extractRelevantInfo(mockDataPoints);
-            const authors = extractAllPeople(mockDataPoints);
-            
-            setFetchedData(relevantData);
-            setAuthors(authors);
-            if (authors.length)
-                {setSelectedPerson(authors[0].id);}
-            return
-            host.alert('YTApp: could not request custom HTTP endpoint', 'error' as AlertType.ERROR)
+    const loadData = async () => {
+        const fetchedData: extractedDataPointsPoint[] = await fetchWorkItems(from, to, "Subtask of: TODO-380");
+    
+        const authors = extractAllPeople(fetchedData);
+        setAuthors(authors);
+
+        if (authors.length) {
+            setSelectedPerson(authors[0].id)
         }
+        const extractedDataPoints: ExtractedDataPoint[] = extractRelevantInfo(fetchedData);
+        setExtractedDataPoints(extractedDataPoints);
     }
 
     useEffect(() => {
-        fetchWorkItems()
+        loadData()
     }, [from, to]);
 
     useEffect(() => {
-        if (fetchedData.length === 0)
-            {return}
-        const povData = evaluateFromPOV(selectedPerson, fetchedData, from, to, groupedByWeek ? "week" : "day");
-        setTileChartData([...povData]);
-    }, [fetchedData, selectedPerson, groupedByWeek]);
+        if (extractedDataPoints.length === 0) {
+            return
+        };
+        const povData = evaluateFromPOV(selectedPerson, extractedDataPoints, from, to, groupedByWeek ? "week" : "day");
+        setChartData([...povData]);
+    }, [extractedDataPoints, selectedPerson, groupedByWeek]);
 
     // whenever the data changes (person, dates, grouping), all present categories start active
     useEffect(() => {
@@ -107,20 +94,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
     };
 
     useEffect(() => {
-        if (fetchedData.length === 0)
-            {return}
-        if (aggregation === "count") {
-            const countsByCategory = getDayCountContributionCategories(tileChartData);
-            setSummaryChartData(countsByCategory);
-        }
-        if (aggregation === "median") {
-            const medianContributionByCategory = getAverageContributionPerCategory(tileChartData);
-            setSummaryChartData(medianContributionByCategory);
-        }
-    }, [tileChartData, aggregation, selectedPerson]);
-
-    useEffect(() => {
-        if (!tilePlotRef.current) {return;}
+        if (!plotRef.current) {return;}
 
         const resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
@@ -129,7 +103,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
             }
         });
 
-        resizeObserver.observe(tilePlotRef.current);
+        resizeObserver.observe(plotRef.current);
         return () => resizeObserver.disconnect();
     }, []);
 
@@ -170,7 +144,7 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
             </ButtonGroup>
             
             <Button
-                onClick={() => fetchWorkItems()}
+                onClick={() => loadData()}
             >
                 Refresh Data
             </Button>
@@ -179,18 +153,10 @@ const AppComponent = ({ host }: { host: HostAPI }) => {
         <section
             id="graph"
             className="component"
-            ref={tilePlotRef}
+            ref={plotRef}
         >
-          {/* <TilePlot
-                    data={tileChartData}
-                    viewBoxWidth={containerWidth}
-                    width={containerWidth}
-                    viewBoxHeight={containerHeight}
-                    height={containerHeight}
-                    mode={groupedByWeek ? "week" : "day"}
-                /> */}
           <TimePlot
-            data={tileChartData}
+            data={ChartData}
             width={containerWidth}
             height={containerHeight}
             activeCategories={activeCategories}
