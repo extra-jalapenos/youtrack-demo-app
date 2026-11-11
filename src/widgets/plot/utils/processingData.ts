@@ -51,7 +51,7 @@ export const evaluateFromPOV = (authorId: string,
         }
         const { totalMinutes, uniquePersons } = minutesByTimeframe.get(dateToCheck)!;
         const ownContribution: number = minutesByTimeframeAndPersonId.get(dateToCheck)!.get(authorId) || 0;
-        const avgMinutes = calculateAverageOtherContribution(minutesByTimeframeAndPersonId.get(dateToCheck)!, authorId) || 0 as number;
+        const avgMinutes = (totalMinutes - ownContribution) / (uniquePersons - 1);
         const contribution = compareContributionToRest([ownContribution, avgMinutes])
 
         return {

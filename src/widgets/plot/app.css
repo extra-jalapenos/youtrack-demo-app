@@ -46,7 +46,6 @@ g.axes  text {
 
 svg.canvas rect.total-minutes {
   stroke-width: 20;
-
 }
 
 g.grid line {
@@ -56,7 +55,7 @@ g.grid line {
 
 .total-minutes {
   font-size: var(--ring-font-size-smaller);
-  opacity: 0.2;
+  fill: var(--ring-button-border-color);
 }
 
 .benchmark {
