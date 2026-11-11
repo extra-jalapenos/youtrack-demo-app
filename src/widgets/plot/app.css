@@ -11,9 +11,6 @@ body {
   font-family: var(--ring-font-family);
   font-size: var(--ring-font-size);
   color: var(--ring-text-color);
-}
-
-#root {
   display: grid;
   height: 100%;
   grid-template-areas: "header"
@@ -36,6 +33,7 @@ body {
   grid-area: header;
 }
 
+/* styling svg text and lines the same way as native p-element text */
 text {
   fill: currentColor;
   font-family: var(--ring-font-family);

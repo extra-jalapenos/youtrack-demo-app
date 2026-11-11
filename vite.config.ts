@@ -49,7 +49,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         // List every widget entry point here
-        allysWidget: resolve(__dirname, 'src/widgets/tile-plot/index.html')
+        allysWidget: resolve(__dirname, 'src/widgets/plot/index.html')
       }
     }
   }

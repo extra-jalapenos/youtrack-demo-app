@@ -1,5 +1,5 @@
 {
-  "name": "tile-plot-widget",
+  "name": "plot-widget",
   "title": "Visualization Widgets",
   "description": "An app that contains different plots with d3.",
   "$schema": "https://json.schemastore.org/youtrack-app.json",
@@ -18,9 +18,9 @@
     {
       "key": "tile-chart",
       "name": "Contributions over Time",
-      "indexPath": "tile-plot/index.html",
+      "indexPath": "plot/index.html",
       "extensionPoint": "DASHBOARD_WIDGET",
-      "iconPath": "tile-plot/widget-icon.svg",
+      "iconPath": "plot/widget-icon.svg",
       "description": "A Git-style visualization of worklogs per day."
     }
   ]

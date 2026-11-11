@@ -15,7 +15,7 @@ This is a **YouTrack App** — a widget framework that extends JetBrains YouTrac
 ```
 src/
 ├── widgets/
-│   └── tile-plot/          # Primary widget: Contributions over Time (worklog visualization)
+│   └── plot/          # Primary widget: Contributions over Time (worklog visualization)
 │       ├── app.tsx         # Main React component
 │       ├── TilePlot.tsx    # D3 visualization of worklogs as a Git-style heatmap
 │       ├── RadialChart.tsx # WIP radial chart visualization (mostly commented out)
@@ -74,7 +74,7 @@ const response = await host.fetchYouTrack('workItems', {
 **Output Structure**:
 - All widgets compile to a flat `dist/` directory
 - `manifest.json` describes all widgets and their extension points (e.g., `DASHBOARD_WIDGET`)
-- Each widget references its `indexPath` (e.g., `tile-plot/index.html`) in the manifest
+- Each widget references its `indexPath` (e.g., `plot/index.html`) in the manifest
 - ZIP'ed and uploaded to YouTrack for installation
 
 ### TypeScript Setup
@@ -101,7 +101,7 @@ const response = await host.fetchYouTrack('workItems', {
 6. Run `npm run build` to bundle
 
 ### Testing Changes
-- `npm run dev` starts Vite dev server; open `http://localhost:5173/src/widgets/tile-plot/index.html` to view locally
+- `npm run dev` starts Vite dev server; open `http://localhost:5173/src/widgets/plot/index.html` to view locally
 - To test in YouTrack: `npm run build && npm run upload` (requires .env setup)
 - Linting must pass before build: `npm run lint --fix` to auto-correct
 
