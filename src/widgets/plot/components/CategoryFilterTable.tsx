@@ -11,28 +11,26 @@ type CategoryFilterTableProps = {
 
 const CategoryFilterTable = ({summary, activeCategories, onToggle}: CategoryFilterTableProps) => (
     <div className="category-list">
-        <div className="category-row category-header" aria-hidden="true">
-            <span>Category</span>
-            <span className="numeric">Days</span>
-            <span className="numeric">My time</span>
-        </div>
         {summary.map(({label, days, ownMinutes}) => {
             const colour = contributionCategoryColour.get(label);
             return (
-                <div key={label} className="category-row">
+                <div 
+                    key={label}
+                    className="item"
+                    aria-pressed={activeCategories.has(label)}
+                    onClick={() => onToggle(label)}
+                    style={{'--category-colour': colour} as CSSProperties}
+                    
+                 >
                     <button
                         type="button"
-                        className="category-toggle"
-                        aria-pressed={activeCategories.has(label)}
                         disabled={days === 0}
-                        onClick={() => onToggle(label)}
-                        style={{'--category-colour': colour} as CSSProperties}
                     >
                         <span className="category-swatch"/>
                         {label}
                     </button>
-                    <span className="numeric">{days}</span>
-                    <span className="numeric">{formatDuration({minutes: ownMinutes}, {zero: true})}</span>
+                    <p className="numeric">{formatDuration({days: days}, {zero: true})}</p>
+                    <p className="numeric">{formatDuration({minutes: ownMinutes}, {zero: true})}</p>
                 </div>
             );
         })}

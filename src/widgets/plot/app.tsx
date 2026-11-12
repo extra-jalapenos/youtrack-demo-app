@@ -167,11 +167,7 @@ const AppComponent = () => {
           />
         </section>
         <section id="summary">
-          <CategoryFilterTable
-            summary={categorySummary}
-            activeCategories={activeCategories}
-            onToggle={toggleCategory}
-          />
+          <p>On average, you contribute</p>
         </section>
       </>
     )

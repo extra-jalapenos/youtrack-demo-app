@@ -11,6 +11,7 @@ import { axisLeft, axisBottom } from "d3-axis";
 import { timeDay, timeMonday } from "d3-time";
 import "d3-transition";
 import { easeBounce, easeBounceIn, easeElastic } from "d3";
+import { describeDataPoint } from "../utils/helper.ts";
 
 const margins = { top: 20, right: 20, bottom: 30, left: 40 };
 const TRANSITION_MS = 500;
@@ -97,8 +98,8 @@ const TimePlot = ({
 
     // bars, keyed by day so changed data updates in place instead of appending duplicates
     canvas
-      .selectAll<SVGRectElement, ChartDataPoint>("rect.total-minutes")
-      .data(data, d => d.date)
+      .selectAll<SVGRectElement, ChartDataPoint[]>("rect.total-minutes")
+      .data(data, (d) => d.date)
       .join(
         (enter) => {
             const rects = enter
@@ -108,7 +109,6 @@ const TimePlot = ({
                 .attr("width", xScale.bandwidth())
                 .attr("y", canvasHeight)
                 .attr("height", 0)
-                .attr("fill", "lightblue")
                 .attr("opacity", (d) => 0.2);
             rects.append("title");
             return rects;
@@ -123,11 +123,6 @@ const TimePlot = ({
             .remove(),
       )
       .attr("data-value", (d) => d.totalMinutes)
-      .call((rects) =>
-        rects
-          .select("title")
-          .text((d) => `${d.date.toLocaleDateString()}: ${d.totalMinutes} minutes`),
-      )
       .transition()
       .duration(duration)
       .attr("x", (d) => xScale(d.date.getTime()) ?? 0)
@@ -158,7 +153,6 @@ const TimePlot = ({
             exit
                 .transition()
                 .duration(duration)
-                .attr("fill", "black")
                 .transition()
                 .delay(200)
                 .remove(),
@@ -167,7 +161,7 @@ const TimePlot = ({
       .call((rects) =>
         rects
           .select("title")
-          .text((d) => `${d.date.toLocaleDateString()}: ${d.minutes} minutes`),
+          .text((d) => describeDataPoint(d)),
       )
       .attr("x", (d) => xScale(d.date.getTime()) ?? 0)
       .attr("width", xScale.bandwidth())
