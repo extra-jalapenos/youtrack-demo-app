@@ -2,7 +2,7 @@
 import { useRef, useEffect } from "react";
 import { ChartDataPoint } from "../utils/types.d.ts";
 
-import { colorScaleContributionCategorical, colorScaleContributionLinear } from "../utils/colorScales.ts";
+import { colorScaleContributionCategorical } from "../utils/colorScales.ts";
 
 import { max, union } from "d3-array";
 import { select } from "d3-selection";
@@ -12,8 +12,8 @@ import { timeDay, timeMonday } from "d3-time";
 import "d3-transition";
 import { easeBounce, easeBounceIn, easeElastic } from "d3";
 import { describeDataPoint } from "../utils/helper.ts";
+import { margins } from "../utils/constants.ts";
 
-const margins = { top: 20, right: 20, bottom: 30, left: 40 };
 const TRANSITION_MS = 500;
 const MIN_TICK_SPACING_PX = 48;
 

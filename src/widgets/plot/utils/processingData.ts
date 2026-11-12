@@ -1,7 +1,8 @@
 import {FetchedDataPoint, ExtractedDataPoint, ChartDataPoint} from "./types.d.ts";
 import {InternMap, median, rollup, sum, timeDay, union, timeMonday, group} from "d3";
 import {calculateAverageOtherContribution, compareContributionToRest, getEmptyMap} from "./helper.ts";
-import {contributionLabels, contributionLabelScale} from "./colorScales.ts";
+import { contributionLabelScale} from "./colorScales.ts";
+import { contributionLabels } from "./constants.ts";
 
 export const extractRelevantInfo = (fetchedData: FetchedDataPoint[]): ExtractedDataPoint[] => fetchedData.map(d => {
     const date = timeDay.floor(new Date(d.date));

@@ -22,6 +22,7 @@ import ButtonToolbar from "@jetbrains/ring-ui-built/components/button-toolbar/bu
 import TimePlot from './components/TimePlot.tsx';
 import CategoryFilterTable from './components/CategoryFilterTable.tsx';
 import { fetchWorkItems } from './utils/fetching.ts';
+import DatePicker from '@jetbrains/ring-ui-built/components/date-picker/date-picker.js';
 
 const AppComponent = () => {
     const [containerWidth, setContainerWidth] = useState(0);
@@ -30,8 +31,10 @@ const AppComponent = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [isConfiguring, setIsConfiguring] = useState(false);
     
-    const [from, setFrom] = useState(sub(new Date(), { months: 3, weeks: 5 }));
-    const [to, setTo] = useState((new Date()));
+    const [timeframe, setTimeframe] = useState<{ from: Date, to: Date }>({ 
+        from: sub(new Date(), { months: 6 }),
+        to: new Date()
+    })
 
     const [extractedDataPoints, setExtractedDataPoints] = useState<ExtractedDataPoint[]>([]);
     const [authors, setAuthors] = useState<author[]>([]);
@@ -51,6 +54,7 @@ const AppComponent = () => {
     const categorySummary = useMemo(() => getCategorySummary(ChartData), [ChartData]);
 
     const loadData = async () => {
+        const { from, to } = timeframe;
         const fetchedData: FetchedDataPoint[] = await fetchWorkItems(from, to, "Subtask of: TODO-380");
     
         const authors = extractAllPeople(fetchedData);
@@ -65,12 +69,13 @@ const AppComponent = () => {
 
     useEffect(() => {
         loadData()
-    }, [from, to]);
+    }, [timeframe]);
 
     useEffect(() => {
         if (extractedDataPoints.length === 0) {
             return
         };
+        const { from, to } = timeframe;
         const groupingFunction = (d: ExtractedDataPoint) => timeDay(d.date)
         const povData = evaluateFromPOV(selectedPerson, extractedDataPoints, from, to, groupingFunction);
         setChartData([...povData]);
@@ -152,6 +157,15 @@ const AppComponent = () => {
             >
                 Refresh Data
             </Button>
+
+            <DatePicker
+                clear
+                from={timeframe.from}
+                maxDate={new Date().toDateString()}
+                onChange={(event) => setTimeframe(event)}
+                range
+                to={timeframe.to}
+            />
           </ButtonToolbar>
         </section>
         <section
